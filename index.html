@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DFIR Scripts — Windows Forensic Reference Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#090b0f;--surface:#0f1219;--surface2:#161b26;--surface3:#1e2535;
+  --border:#252e42;--border2:#374259;
+  --accent:#00e5ff;--accent2:#7c5cfc;--accent3:#ff6b35;--accent4:#39d353;
+  --text:#dde4ef;--muted:#6b7b96;--muted2:#3d4a62;
+  --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+
+/* grid background */
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(0,229,255,.02) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(0,229,255,.02) 1px,transparent 1px);
+  background-size:48px 48px;pointer-events:none;z-index:0}
+
+/* ── NAV ── */
+nav{position:sticky;top:0;z-index:100;background:rgba(9,11,15,.97);
+  border-bottom:1px solid var(--border);backdrop-filter:blur(12px);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 40px;height:52px}
+.nav-logo{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);
+  display:flex;align-items:center;gap:8px;text-decoration:none}
+.nav-logo::before{content:'⊞';font-size:16px}
+.nav-links{display:flex;gap:4px}
+.nav-link{font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;
+  padding:5px 10px;border-radius:3px;border:1px solid transparent;transition:all .15s}
+.nav-link:hover{color:var(--text);background:var(--surface2);border-color:var(--border)}
+.nav-gh{font-family:var(--mono);font-size:11px;color:var(--accent2);text-decoration:none;
+  padding:5px 12px;border-radius:3px;border:1px solid rgba(124,92,252,.3);
+  background:rgba(124,92,252,.07);transition:all .15s}
+.nav-gh:hover{background:rgba(124,92,252,.15)}
+
+/* ── HERO ── */
+.hero{position:relative;z-index:1;padding:80px 40px 60px;max-width:1100px;margin:0 auto;text-align:center}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;
+  background:rgba(0,229,255,.07);border:1px solid rgba(0,229,255,.18);
+  color:var(--accent);font-family:var(--mono);font-size:10px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;padding:4px 12px;border-radius:2px;
+  margin-bottom:20px}
+.hero-badge::before{content:'';width:6px;height:6px;background:var(--accent);
+  border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.hero h1{font-size:clamp(32px,5vw,64px);font-weight:800;line-height:1.05;
+  letter-spacing:-.04em;color:#fff;margin-bottom:16px}
+.hero h1 em{color:var(--accent);font-style:normal}
+.hero h1 .dim{color:var(--muted)}
+.hero-sub{color:var(--muted);font-size:15px;max-width:580px;margin:0 auto 32px;line-height:1.7}
+.hero-stats{display:flex;gap:32px;justify-content:center;flex-wrap:wrap;margin-bottom:48px}
+.hero-stat{display:flex;flex-direction:column;align-items:center;gap:2px}
+.hero-stat-num{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--accent);line-height:1}
+.hero-stat-label{font-family:var(--mono);font-size:9px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.12em}
+
+/* ── TOOL CARDS ── */
+.tools-section{position:relative;z-index:1;padding:0 40px 80px;max-width:1100px;margin:0 auto}
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+
+.tool-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;
+  overflow:hidden;text-decoration:none;color:inherit;
+  transition:all .2s;display:flex;flex-direction:column;
+  position:relative}
+.tool-card:hover{border-color:var(--border2);transform:translateY(-3px);
+  box-shadow:0 16px 40px rgba(0,0,0,.5)}
+.tool-card.registry:hover{border-color:rgba(0,229,255,.4);box-shadow:0 16px 40px rgba(0,229,255,.07)}
+.tool-card.secevents:hover{border-color:rgba(74,222,128,.4);box-shadow:0 16px 40px rgba(74,222,128,.07)}
+.tool-card.sysmon:hover{border-color:rgba(124,92,252,.4);box-shadow:0 16px 40px rgba(124,92,252,.07)}
+
+.tool-card-top{padding:24px 24px 18px;flex:1}
+.tool-icon{font-size:32px;margin-bottom:14px;display:block}
+.tool-name{font-size:18px;font-weight:800;color:#fff;margin-bottom:6px;line-height:1.2}
+.tool-tagline{font-family:var(--mono);font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.12em;margin-bottom:12px}
+.tool-card.registry .tool-tagline{color:var(--accent)}
+.tool-card.secevents .tool-tagline{color:#4ade80}
+.tool-card.sysmon .tool-tagline{color:#a78bfa}
+.tool-desc{color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:18px}
+
+.tool-meta{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px}
+.meta-chip{font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 7px;
+  border-radius:2px;text-transform:uppercase;letter-spacing:.06em}
+.mc-cyan{background:rgba(0,229,255,.08);color:var(--accent);border:1px solid rgba(0,229,255,.2)}
+.mc-green{background:rgba(57,211,83,.08);color:#39d353;border:1px solid rgba(57,211,83,.2)}
+.mc-purple{background:rgba(167,139,250,.08);color:#a78bfa;border:1px solid rgba(167,139,250,.2)}
+.mc-orange{background:rgba(255,107,53,.08);color:#ff6b35;border:1px solid rgba(255,107,53,.2)}
+.mc-muted{background:rgba(100,116,139,.06);color:var(--muted);border:1px solid var(--border)}
+
+.tool-card-footer{padding:14px 24px;border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(0,0,0,.2)}
+.tool-count{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.tool-count strong{font-size:13px}
+.tool-card.registry .tool-count strong{color:var(--accent)}
+.tool-card.secevents .tool-count strong{color:#4ade80}
+.tool-card.sysmon .tool-count strong{color:#a78bfa}
+.tool-launch{font-family:var(--mono);font-size:10px;font-weight:700;
+  padding:5px 12px;border-radius:3px;transition:all .15s;white-space:nowrap}
+.tool-card.registry .tool-launch{color:var(--accent);border:1px solid rgba(0,229,255,.3);background:rgba(0,229,255,.06)}
+.tool-card.registry:hover .tool-launch{background:rgba(0,229,255,.12)}
+.tool-card.secevents .tool-launch{color:#4ade80;border:1px solid rgba(74,222,128,.3);background:rgba(74,222,128,.06)}
+.tool-card.secevents:hover .tool-launch{background:rgba(74,222,128,.12)}
+.tool-card.sysmon .tool-launch{color:#a78bfa;border:1px solid rgba(167,139,250,.3);background:rgba(167,139,250,.06)}
+.tool-card.sysmon:hover .tool-launch{background:rgba(167,139,250,.12)}
+
+/* ── ACCENT LINE on card top ── */
+.tool-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.tool-card.registry::before{background:linear-gradient(90deg,var(--accent),transparent)}
+.tool-card.secevents::before{background:linear-gradient(90deg,#4ade80,transparent)}
+.tool-card.sysmon::before{background:linear-gradient(90deg,#a78bfa,transparent)}
+
+/* ── HOW IT WORKS ── */
+.about-section{position:relative;z-index:1;padding:0 40px 80px;max-width:900px;margin:0 auto}
+.section-label{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--muted2);
+  text-transform:uppercase;letter-spacing:.16em;margin-bottom:16px;display:block}
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.about-card{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:20px 22px}
+.about-card h3{font-size:13px;font-weight:700;color:#fff;margin-bottom:8px;
+  display:flex;align-items:center;gap:8px}
+.about-card p{color:var(--muted);font-size:12px;line-height:1.65}
+.about-card p + p{margin-top:8px}
+.about-card a{color:var(--accent);text-decoration:none}
+.about-card a:hover{text-decoration:underline}
+
+/* ── SOURCES ── */
+.sources-section{position:relative;z-index:1;padding:0 40px 60px;max-width:900px;margin:0 auto}
+.sources-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.source-badge{font-family:var(--mono);font-size:10px;font-weight:600;
+  padding:4px 10px;border-radius:3px;text-decoration:none;transition:all .12s}
+.sb-ms{background:rgba(96,165,250,.08);color:#60a5fa;border:1px solid rgba(96,165,250,.2)}
+.sb-sigma{background:rgba(255,107,53,.08);color:#ff6b35;border:1px solid rgba(255,107,53,.2)}
+.sb-mitre{background:rgba(239,68,68,.08);color:#f87171;border:1px solid rgba(239,68,68,.2)}
+.sb-lolrmm{background:rgba(245,158,11,.08);color:#f59e0b;border:1px solid rgba(245,158,11,.2)}
+.sb-rr{background:rgba(57,211,83,.08);color:#39d353;border:1px solid rgba(57,211,83,.2)}
+.sb-ez{background:rgba(45,212,191,.08);color:#2dd4bf;border:1px solid rgba(45,212,191,.2)}
+.sb-anssi{background:rgba(124,92,252,.08);color:#7c5cfc;border:1px solid rgba(124,92,252,.2)}
+.source-badge:hover{filter:brightness(1.2)}
+
+/* ── FOOTER ── */
+footer{position:relative;z-index:1;border-top:1px solid var(--border);
+  padding:24px 40px;display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px}
+.footer-left{font-family:var(--mono);font-size:11px;color:var(--muted2)}
+.footer-left a{color:var(--muted);text-decoration:none}
+.footer-left a:hover{color:var(--text)}
+.footer-right{display:flex;gap:12px;align-items:center}
+.footer-badge{font-family:var(--mono);font-size:9px;font-weight:700;
+  padding:2px 7px;border-radius:2px;text-transform:uppercase;letter-spacing:.08em;
+  background:rgba(0,229,255,.07);color:var(--accent);border:1px solid rgba(0,229,255,.18)}
+
+/* ── DIVIDER ── */
+.divider{position:relative;z-index:1;max-width:900px;margin:0 auto 48px;
+  padding:0 40px;display:flex;align-items:center;gap:16px}
+.divider-line{flex:1;height:1px;background:var(--border)}
+.divider-label{font-family:var(--mono);font-size:9px;color:var(--muted2);
+  text-transform:uppercase;letter-spacing:.16em;white-space:nowrap}
+
+/* ── TERMINAL BLINK ── */
+.blink{animation:blink 1s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+@media(max-width:700px){
+  nav{padding:0 16px}
+  .nav-links{display:none}
+  .hero,.tools-section,.about-section,.sources-section{padding-left:16px;padding-right:16px}
+  .hero{padding-top:48px}
+  .about-grid{grid-template-columns:1fr}
+  footer{padding:20px 16px;flex-direction:column;align-items:flex-start}
+}
+
+.tool-card.registry a[download]:hover{color:var(--accent)!important;border-color:rgba(0,229,255,.3)!important}
+.tool-card.secevents a[download]:hover{color:#4ade80!important;border-color:rgba(74,222,128,.3)!important}
+.tool-card.sysmon a[download]:hover{color:#a78bfa!important;border-color:rgba(167,139,250,.3)!important}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">dfir-scripts</a>
+  <div class="nav-links">
+    <a href="https://dfir-scripts.github.io/Windows-Registry-Artifacts/" class="nav-link">Registry</a>
+    <a href="https://dfir-scripts.github.io/SecurityEventIDs/" class="nav-link">Security Events</a>
+    <a href="https://dfir-scripts.github.io/SysmonIDs/" class="nav-link">Sysmon</a>
+  </div>
+  <a href="https://github.com/dfir-scripts" target="_blank" class="nav-gh">GitHub ↗</a>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-badge">DFIR Reference v0.1</div>
+  <h1>Windows <em>Forensic</em><br><span class="dim">Reference Tools</span></h1>
+  <p class="hero-sub">Self-contained, offline-capable DFIR reference pages for Windows artifact analysis. Download any tool as a single HTML file and use it anywhere.</p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="hero-stat-num">587</span>
+      <span class="hero-stat-label">Registry Artifacts</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num">399</span>
+      <span class="hero-stat-label">Security Event IDs</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num">30</span>
+      <span class="hero-stat-label">Sysmon Event IDs</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num" style="color:#ff6b35">275</span>
+      <span class="hero-stat-label">Sigma Rules</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── TOOL CARDS ── -->
+<section class="tools-section">
+  <div class="tools-grid">
+
+    <!-- REGISTRY -->
+    <a href="https://dfir-scripts.github.io/Windows-Registry-Artifacts/" class="tool-card registry">
+      <div class="tool-card-top">
+        <span class="tool-icon">🗂️</span>
+        <div class="tool-name">Windows Registry<br>Artifact Explorer</div>
+        <div class="tool-tagline">Forensic Artifacts · ATT&CK Mapping · LOLRMM</div>
+        <p class="tool-desc">Comprehensive registry artifact reference covering persistence, execution, user activity, credential access, and network configuration. Includes 23 LOLRMM-abused RMM tools, 68 ATT&CK techniques, and notable attacker tools with forensic guidance.</p>
+        <div class="tool-meta">
+          <span class="meta-chip mc-cyan">587 Artifacts</span>
+          <span class="meta-chip mc-cyan">20 Categories</span>
+          <span class="meta-chip mc-orange">68 ATT&CK Techniques</span>
+          <span class="meta-chip mc-muted">23 RMM Tools</span>
+          <span class="meta-chip mc-muted">RegRipper 3.0/4.0</span>
+          <span class="meta-chip mc-muted">Autoruns</span>
+          <span class="meta-chip mc-muted">RECmd · SBECmd</span>
+          <span class="meta-chip mc-muted">AmcacheParser</span>
+        </div>
+      </div>
+      <div class="tool-card-footer">
+        <div class="tool-count"><strong>587</strong> artifacts across 20 categories</div>
+        <div style="display:flex;gap:6px;align-items:center"><a href="https://github.com/dfir-scripts/Windows-Registry-Artifacts/raw/main/index.html" download="registry_artifacts.html" onclick="event.stopPropagation()" style="font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 10px;border-radius:3px;text-decoration:none;transition:all .15s;white-space:nowrap;color:var(--muted);border:1px solid var(--border);background:var(--surface2)">⬇ Download</a><span class="tool-launch">Open Tool ↗</span></div>
+      </div>
+    </a>
+
+    <!-- SECURITY EVENTS -->
+    <a href="https://dfir-scripts.github.io/SecurityEventIDs/" class="tool-card secevents">
+      <div class="tool-card-top">
+        <span class="tool-icon">🔑</span>
+        <div class="tool-name">Windows Security<br>Event ID Reference</div>
+        <div class="tool-tagline">Security.evtx · Appendix L · Sigma Rules</div>
+        <p class="tool-desc">Complete Security.evtx event ID reference with Microsoft Appendix L criticality tiers (High/Medium/Low), investigation notes for key events, and 60 curated Sigma detection rules with full-database search across 195 rules.</p>
+        <div class="tool-meta">
+          <span class="meta-chip mc-green">399 Event IDs</span>
+          <span class="meta-chip mc-green">8 Categories</span>
+          <span class="meta-chip mc-orange">60 Sigma Rules</span>
+          <span class="meta-chip mc-muted">Microsoft Appendix L</span>
+          <span class="meta-chip mc-muted">Kerberoasting</span>
+          <span class="meta-chip mc-muted">DCSync</span>
+          <span class="meta-chip mc-muted">Pass-the-Hash</span>
+        </div>
+      </div>
+      <div class="tool-card-footer">
+        <div class="tool-count"><strong>399</strong> event IDs · Appendix L criticality</div>
+        <div style="display:flex;gap:6px;align-items:center"><a href="https://github.com/dfir-scripts/SecurityEventIDs/raw/main/index.html" download="security_event_ids.html" onclick="event.stopPropagation()" style="font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 10px;border-radius:3px;text-decoration:none;transition:all .15s;white-space:nowrap;color:var(--muted);border:1px solid var(--border);background:var(--surface2)">⬇ Download</a><span class="tool-launch">Open Tool ↗</span></div>
+      </div>
+    </a>
+
+    <!-- SYSMON -->
+    <a href="https://dfir-scripts.github.io/SysmonIDs/" class="tool-card sysmon">
+      <div class="tool-card-top">
+        <span class="tool-icon">🔵</span>
+        <div class="tool-name">Sysmon<br>Event ID Reference</div>
+        <div class="tool-tagline">Sysmon v15.2 · Sigma Rules · Full DB Search</div>
+        <p class="tool-desc">Complete Sysmon v15.2 reference covering all 30 event IDs with key fields, noise level ratings, configuration guidance, and 80 curated Sigma detection rules. Full-database search across 195 Sysmon-specific detection rules via companion JSON.</p>
+        <div class="tool-meta">
+          <span class="meta-chip mc-purple">30 Event IDs</span>
+          <span class="meta-chip mc-purple">Sysmon v15.2</span>
+          <span class="meta-chip mc-orange">80 Curated Rules</span>
+          <span class="meta-chip mc-orange">195 Rule Database</span>
+          <span class="meta-chip mc-muted">Noise Levels</span>
+          <span class="meta-chip mc-muted">Config Guidance</span>
+          <span class="meta-chip mc-muted">BYOVD · Hollowing</span>
+        </div>
+      </div>
+      <div class="tool-card-footer">
+        <div class="tool-count"><strong>30</strong> event IDs · 195 detection rules</div>
+        <div style="display:flex;gap:6px;align-items:center"><a href="https://github.com/dfir-scripts/SysmonIDs/raw/main/index.html" download="sysmon_event_ids.html" onclick="event.stopPropagation()" style="font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 10px;border-radius:3px;text-decoration:none;transition:all .15s;white-space:nowrap;color:var(--muted);border:1px solid var(--border);background:var(--surface2)">⬇ Download</a><span class="tool-launch">Open Tool ↗</span></div>
+      </div>
+    </a>
+
+  </div>
+</section>
+
+<!-- ── DIVIDER ── -->
+<div class="divider">
+  <div class="divider-line"></div>
+  <span class="divider-label">About</span>
+  <div class="divider-line"></div>
+</div>
+
+<!-- ── ABOUT ── -->
+<section class="about-section">
+  <div class="about-grid">
+
+    <div class="about-card">
+      <h3>🗄️ What is this?</h3>
+      <p>A set of self-contained HTML reference pages for Windows digital forensics and incident response. Each tool covers a specific evidence source — registry hives, Security event log, and Sysmon — with artifact documentation, forensic investigation notes, and detection rules.</p>
+      <p>Built for practitioners who need fast, offline-capable references during investigations. No login, no tracking, no dependencies beyond Google Fonts.</p>
+    </div>
+
+    <div class="about-card">
+      <h3>⚡ Sigma Detection Rules</h3>
+      <p>Each tool includes a curated set of <a href="https://github.com/SigmaHQ/sigma" target="_blank">SigmaHQ</a> detection rules hand-selected for investigative relevance. Rules are vendor-agnostic YAML — convert to Splunk, Elastic, Microsoft Sentinel, QRadar, and others via <a href="https://sigconverter.io" target="_blank">sigconverter.io</a>.</p>
+      <p>The Sysmon tool includes a full 195-rule companion JSON database with keyword search, surfacing rules beyond the curated set.</p>
+    </div>
+
+    <div class="about-card">
+      <h3>🗺️ ATT&CK Mapping</h3>
+      <p>Registry artifacts are mapped to <a href="https://attack.mitre.org/" target="_blank">MITRE ATT&CK Enterprise</a> techniques — 282 of 587 artifacts have direct technique mappings. Filter by tactic (Persistence, Credential Access, Defense Evasion, etc.) to focus investigation on relevant keys.</p>
+      <p>Security Event IDs and Sigma rules are also tagged with ATT&CK technique IDs linking directly to attack.mitre.org.</p>
+    </div>
+
+    <div class="about-card">
+      <h3>🔧 Usage &amp; Schema Files</h3>
+      <p>Each tool works fully offline — download the HTML file and open it in any browser. Filters, search, expand/collapse, copy buttons, and all cross-references work without an internet connection (Google Fonts degrades gracefully to system fonts).</p>
+      <p>The Registry and Sysmon tools are backed by versioned JSON schema files designed to be updated independently of the HTML as new artifacts, techniques, and detection rules become available:</p>
+      <p>
+        <a href="https://github.com/dfir-scripts/Windows-Registry-Artifacts/blob/main/windows_registry_artifacts_schema_v0.1.json" target="_blank" style="font-family:var(--mono);font-size:11px;color:var(--accent);display:inline-block;margin:4px 0">windows_registry_artifacts_schema_v0.1.json</a><br>
+        <a href="https://github.com/dfir-scripts/SysmonIDs/blob/main/sysmon_rules_complete.json" target="_blank" style="font-family:var(--mono);font-size:11px;color:#a78bfa;display:inline-block;margin:4px 0">sysmon_rules_complete.json</a>
+      </p>
+      <p>Security Event IDs are well-documented in <a href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/appendix-l--events-to-monitor" target="_blank" style="color:var(--accent4)">Microsoft Appendix L</a> — no separate schema file is maintained for that reference.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── DIVIDER ── -->
+<div class="divider">
+  <div class="divider-line"></div>
+  <span class="divider-label">Sources</span>
+  <div class="divider-line"></div>
+</div>
+
+<!-- ── SOURCES ── -->
+<section class="sources-section">
+  <span class="section-label">Authoritative Sources &amp; References</span>
+  <div class="sources-grid">
+    <a href="https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon" target="_blank" class="source-badge sb-ms">Microsoft Sysinternals Sysmon v15.2</a>
+    <a href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/appendix-l--events-to-monitor" target="_blank" class="source-badge sb-ms">Microsoft Appendix L: Events to Monitor</a>
+    <a href="https://www.microsoft.com/en-us/download/details.aspx?id=50034" target="_blank" class="source-badge sb-ms">Microsoft Security Auditing Events Spreadsheet</a>
+    <a href="https://learn.microsoft.com/en-us/windows/win32/sysinfo/registry" target="_blank" class="source-badge sb-ms">Microsoft Windows Registry Reference</a>
+    <a href="https://github.com/SigmaHQ/sigma" target="_blank" class="source-badge sb-sigma">SigmaHQ/sigma — Detection Rules (DRL 1.1)</a>
+    <a href="https://sigconverter.io" target="_blank" class="source-badge sb-sigma">sigconverter.io — Rule Conversion</a>
+    <a href="https://attack.mitre.org/" target="_blank" class="source-badge sb-mitre">MITRE ATT&CK Enterprise v18/v19</a>
+    <a href="https://lolrmm.io" target="_blank" class="source-badge sb-lolrmm">LOLRMM.io — Living Off the Land RMM</a>
+    <a href="https://github.com/keydet89/RegRipper3.0" target="_blank" class="source-badge sb-rr">RegRipper 3.0 — Harlan Carvey</a>
+    <a href="https://github.com/keydet89/RegRipper4.0" target="_blank" class="source-badge sb-rr">RegRipper 4.0 — Harlan Carvey</a>
+    <a href="https://learn.microsoft.com/en-us/sysinternals/downloads/autoruns" target="_blank" class="source-badge sb-ms">Sysinternals Autoruns v14.11</a>
+    <a href="https://github.com/EricZimmerman/RECmd" target="_blank" class="source-badge sb-ez">RECmd — Eric Zimmerman</a>
+    <a href="https://github.com/EricZimmerman/ShellBags" target="_blank" class="source-badge sb-ez">SBECmd / ShellBags — Eric Zimmerman</a>
+    <a href="https://github.com/EricZimmerman/AmcacheParser" target="_blank" class="source-badge sb-ez">AmcacheParser — Eric Zimmerman</a>
+    <a href="https://www.ssi.gouv.fr/uploads/2017/05/anssi-analysis-amcachehve.pdf" target="_blank" class="source-badge sb-anssi">ANSSI: Amcache.hve Analysis</a>
+    <a href="https://www.hexacorn.com/blog/2017/01/28/beyond-good-ol-run-key-all-parts/" target="_blank" class="source-badge sb-rr">Hexacorn: Beyond Good Ol' Run Key</a>
+    <a href="https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/" target="_blank" class="source-badge sb-ms">Ultimate Windows Security Encyclopedia</a>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-left">
+    <span>Built for the DFIR community · </span>
+    <a href="https://github.com/dfir-scripts" target="_blank">github.com/dfir-scripts</a>
+    <span> · All tools are open source and free to use</span>
+  </div>
+  <div class="footer-right">
+    <span class="footer-badge">DFIR Reference v0.1</span>
+    <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)">
+      Sigma rules: <a href="https://github.com/SigmaHQ/Detection-Rule-License" target="_blank" style="color:var(--muted2);text-decoration:none">DRL 1.1</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>
