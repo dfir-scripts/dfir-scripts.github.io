@@ -91,13 +91,8 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,11,15,.97);
 .mc-orange{background:rgba(255,107,53,.08);color:#ff6b35;border:1px solid rgba(255,107,53,.2)}
 .mc-muted{background:rgba(100,116,139,.06);color:var(--muted);border:1px solid var(--border)}
 
-.tool-card-footer{padding:0;margin-top:14px;
-  display:flex;align-items:center;justify-content:space-between;gap:10px}
-.tool-count{font-family:var(--mono);font-size:11px;color:var(--muted)}
+
 .tool-count strong{font-size:13px}
-.tool-card.registry .tool-count strong{color:var(--accent)}
-.tool-card.secevents .tool-count strong{color:#4ade80}
-.tool-card.sysmon .tool-count strong{color:#a78bfa}
 /* ── ACCENT LINE on card top ── */
 .tool-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
 .tool-card.registry::before{background:linear-gradient(90deg,var(--accent),transparent)}
@@ -163,12 +158,6 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);
 }
 
 
-.tool-download{font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 12px;
-  border-radius:3px;text-decoration:none;transition:all .15s;white-space:nowrap;
-  color:var(--muted);border:1px solid var(--border);background:var(--surface2)}
-.tool-card.registry .tool-download:hover{color:var(--accent);border-color:rgba(0,229,255,.3)}
-.tool-card.secevents .tool-download:hover{color:#4ade80;border-color:rgba(74,222,128,.3)}
-.tool-card.sysmon .tool-download:hover{color:#a78bfa;border-color:rgba(167,139,250,.3)}
 </style>
 </head>
 <body>
@@ -182,7 +171,7 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);
 <section class="hero">
   <div class="hero-badge">DFIR Reference v0.1</div>
   <h1>Windows <em>Forensic</em><br><span class="dim">Reference Tools</span></h1>
-  <p class="hero-sub">Self-contained, offline-capable DFIR reference pages for Windows artifact analysis. Download any tool as a single HTML file and use it anywhere.</p>
+  <p class="hero-sub">Self-contained, offline-capable DFIR reference pages for Windows artifact analysis. Open any tool directly in your browser — each one is a single HTML file you can also save locally for offline use.</p>
   <div class="hero-stats">
     <div class="hero-stat">
       <span class="hero-stat-num">587</span>
@@ -224,10 +213,6 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);
           <span class="meta-chip mc-muted">RECmd · SBECmd</span>
           <span class="meta-chip mc-muted">AmcacheParser</span>
         </div>
-        <div class="tool-card-footer">
-          <div class="tool-count"><strong>587</strong> artifacts across 20 categories</div>
-          <span onclick="event.stopPropagation();downloadFiles([['registry/index.html','registry_artifacts.html'],['registry/windows_registry_artifacts_schema_v0.1.json','windows_registry_artifacts_schema_v0.1.json']])" class="tool-download" role="button" tabindex="0">⬇ Download</span>
-        </div>
       </div>
     </a>
 
@@ -247,10 +232,6 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);
           <span class="meta-chip mc-muted">DCSync</span>
           <span class="meta-chip mc-muted">Pass-the-Hash</span>
         </div>
-        <div class="tool-card-footer">
-          <div class="tool-count"><strong>399</strong> event IDs · Appendix L criticality</div>
-          <span onclick="event.stopPropagation();downloadFile('security_event_ids.html','security_event_ids.html')" class="tool-download" role="button" tabindex="0">⬇ Download</span>
-        </div>
       </div>
     </a>
 
@@ -269,10 +250,6 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);
           <span class="meta-chip mc-muted">Noise Levels</span>
           <span class="meta-chip mc-muted">Config Guidance</span>
           <span class="meta-chip mc-muted">BYOVD · Hollowing</span>
-        </div>
-        <div class="tool-card-footer">
-          <div class="tool-count"><strong>30</strong> event IDs · 195 detection rules</div>
-          <span onclick="event.stopPropagation();downloadFiles([['sysmon/index.html','sysmon_event_ids.html'],['sysmon/sysmon_rules_complete.json','sysmon_rules_complete.json']])" class="tool-download" role="button" tabindex="0">⬇ Download</span>
         </div>
       </div>
     </a>
@@ -430,7 +407,7 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);
 
     <div class="about-card">
       <h3>🔧 Usage &amp; Schema Files</h3>
-      <p>Each tool works fully offline — download the HTML file and open it in any browser. Filters, search, expand/collapse, copy buttons, and all cross-references work without an internet connection (Google Fonts degrades gracefully to system fonts).</p>
+      <p>Each tool works fully offline once opened — every filter, search, expand/collapse, copy button, and cross-reference works without an internet connection (Google Fonts degrades gracefully to system fonts). To save a tool for offline use, open it and use your browser's Save Page As (Ctrl/Cmd+S).</p>
       <p>The Registry and Sysmon tools are backed by versioned JSON schema files designed to be updated independently of the HTML as new artifacts, techniques, and detection rules become available:</p>
       <p>
         <a href="https://github.com/dfir-scripts/dfir-scripts.github.io/blob/main/registry/windows_registry_artifacts_schema_v0.1.json" target="_blank" style="font-family:var(--mono);font-size:11px;color:var(--accent);display:inline-block;margin:4px 0">windows_registry_artifacts_schema_v0.1.json</a><br>
@@ -488,21 +465,5 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);
   </div>
 </footer>
 
-
-<script>
-function downloadFile(url, filename) {
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-function downloadFiles(pairs) {
-  pairs.forEach(([url, filename], i) => {
-    setTimeout(() => downloadFile(url, filename), i * 400);
-  });
-}
-</script>
 </body>
 </html>
