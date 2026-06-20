@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sysmon Event IDs — DFIR Reference</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#090b0f;--surface:#0f1219;--surface2:#161b26;--surface3:#1e2535;
+  --border:#252e42;--border2:#374259;
+  --accent:#00e5ff;--accent2:#7c5cfc;--accent3:#ff6b35;--accent4:#39d353;
+  --danger:#ef4444;--warn:#f59e0b;--info:#60a5fa;
+  --text:#dde4ef;--muted:#6b7b96;--muted2:#3d4a62;
+  --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
+  /* noise level colors */
+  --noise-vlow:#39d353;--noise-low:#60a5fa;--noise-med:#f59e0b;
+  --noise-high:#ef4444;--noise-vhigh:#dc2626;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.02) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+
+/* ── TABS ── */
+.top-tabs{position:sticky;top:0;z-index:100;background:rgba(9,11,15,.97);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;backdrop-filter:blur(12px)}
+.tab-logo{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);padding:0 16px 0 0;margin-right:16px;border-right:1px solid var(--border);white-space:nowrap}
+.tab-btn{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--muted);padding:12px 16px;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-btn.sigma-tab.active{color:#ff6b35;border-bottom-color:#ff6b35}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* ── HEADER ── */
+header{position:relative;z-index:10;padding:28px 40px 22px;border-bottom:1px solid var(--border);background:linear-gradient(160deg,rgba(0,229,255,.04) 0%,transparent 60%)}
+.header-inner{max-width:1440px;margin:0 auto}
+.header-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(0,229,255,.07);border:1px solid rgba(0,229,255,.18);color:var(--accent);font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;padding:3px 10px;border-radius:2px;margin-bottom:12px}
+.header-badge::before{content:'';width:5px;height:5px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+h1{font-family:var(--sans);font-size:clamp(24px,3vw,44px);font-weight:800;line-height:1.08;letter-spacing:-.03em;color:#fff;margin-bottom:8px}
+h1 em{color:var(--accent);font-style:normal}
+.header-sub{color:var(--muted);font-size:12px;max-width:640px;margin-bottom:16px;line-height:1.6}
+.stats-row{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:10px}
+.stat{display:flex;flex-direction:column;gap:1px}
+.stat-num{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);line-height:1}
+.stat-label{font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.source-legend{display:flex;flex-wrap:wrap;gap:5px}
+.src-badge{font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 6px;border-radius:2px;text-transform:uppercase;letter-spacing:.08em}
+.src-ms{background:rgba(96,165,250,.1);color:#60a5fa;border:1px solid rgba(96,165,250,.25)}
+.src-sigma{background:rgba(255,107,53,.1);color:#ff6b35;border:1px solid rgba(255,107,53,.25)}
+.src-uws{background:rgba(124,92,252,.1);color:#7c5cfc;border:1px solid rgba(124,92,252,.25)}
+
+/* ── LAYOUT ── */
+.layout{position:relative;z-index:1;display:grid;grid-template-columns:262px 1fr;max-width:1440px;margin:0 auto;min-height:calc(100vh - 210px)}
+.sidebar{position:sticky;top:48px;height:calc(100vh - 48px);overflow-y:auto;border-right:1px solid var(--border);background:rgba(9,11,15,.95);scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
+
+.search-wrap{padding:11px;border-bottom:1px solid var(--border);position:relative}
+.search-ico{position:absolute;left:21px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none}
+#search{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 9px 8px 30px;border-radius:3px;outline:none;transition:border-color .15s}
+#search::placeholder{color:var(--muted2)}
+#search:focus{border-color:var(--accent)}
+
+.filter-section{padding:8px 11px 9px;border-bottom:1px solid var(--border)}
+.sec-label{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.14em;display:block;margin-bottom:5px}
+.chip-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.filter-chip{font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 6px;border-radius:2px;cursor:pointer;border:1px solid transparent;transition:all .12s;text-transform:uppercase;letter-spacing:.05em;user-select:none}
+.filter-chip.dim{opacity:.3}
+.filter-chip[data-val="ALL"]{color:var(--muted);border-color:var(--border2)}
+.filter-chip[data-val="ALL"]:not(.dim){background:var(--surface3)}
+.filter-chip[data-noise="Very Low"]{color:var(--noise-vlow);border-color:rgba(57,211,83,.3)}
+.filter-chip[data-noise="Low"]{color:var(--noise-low);border-color:rgba(96,165,250,.3)}
+.filter-chip[data-noise="Medium"]{color:var(--noise-med);border-color:rgba(245,158,11,.3)}
+.filter-chip[data-noise="High"]{color:var(--noise-high);border-color:rgba(239,68,68,.3)}
+.filter-chip[data-noise="Very High"]{color:var(--noise-vhigh);border-color:rgba(220,38,38,.3)}
+.filter-chip[data-enabled="true"]{color:var(--accent4);border-color:rgba(57,211,83,.3)}
+.filter-chip[data-enabled="false"]{color:var(--muted);border-color:rgba(100,116,139,.3)}
+.filter-chip[data-enabled="true"]:not(.dim){background:rgba(57,211,83,.06)}
+
+.cat-section{padding:4px 0 8px}
+.cat-btn{display:flex;align-items:center;justify-content:space-between;width:100%;padding:5px 11px;background:none;border:none;color:var(--muted);font-family:var(--mono);font-size:11px;font-weight:500;cursor:pointer;text-align:left;transition:all .1s;border-left:2px solid transparent;gap:5px}
+.cat-btn:hover{color:var(--text);background:var(--surface2)}
+.cat-btn.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,229,255,.05);font-weight:700}
+
+/* ── MAIN ── */
+.main{padding:20px 28px;overflow:hidden}
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap}
+.results-info{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.results-info strong{color:var(--accent);font-size:12px}
+.controls{display:flex;gap:5px;align-items:center}
+.view-toggle{display:flex;gap:2px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:2px}
+.view-btn{background:none;border:none;color:var(--muted);padding:3px 7px;border-radius:2px;cursor:pointer;font-size:12px;transition:all .1s}
+.view-btn.active{background:var(--surface3);color:var(--text)}
+.sort-select{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:11px;padding:4px 7px;border-radius:3px;outline:none;cursor:pointer}
+
+/* ── NOISE BADGE ── */
+.noise-badge{font-family:var(--mono);font-size:8px;font-weight:700;padding:1px 5px;border-radius:2px;text-transform:uppercase;letter-spacing:.05em;flex-shrink:0}
+.nb-vlow{background:rgba(57,211,83,.1);color:var(--noise-vlow);border:1px solid rgba(57,211,83,.2)}
+.nb-low{background:rgba(96,165,250,.1);color:var(--noise-low);border:1px solid rgba(96,165,250,.2)}
+.nb-med{background:rgba(245,158,11,.1);color:var(--noise-med);border:1px solid rgba(245,158,11,.2)}
+.nb-high{background:rgba(239,68,68,.1);color:var(--noise-high);border:1px solid rgba(239,68,68,.2)}
+.nb-vhigh{background:rgba(220,38,38,.1);color:var(--noise-vhigh);border:1px solid rgba(220,38,38,.2)}
+
+/* ── ENABLED BADGE ── */
+.enabled-badge{font-family:var(--mono);font-size:8px;font-weight:700;padding:1px 5px;border-radius:2px}
+.eb-on{background:rgba(57,211,83,.1);color:#39d353;border:1px solid rgba(57,211,83,.2)}
+.eb-off{background:rgba(100,116,139,.08);color:var(--muted);border:1px solid var(--border)}
+
+/* ── EID CARD ── */
+.events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:8px}
+.events-list{display:flex;flex-direction:column;gap:4px}
+
+.ecard{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;cursor:pointer;transition:border-color .12s,box-shadow .12s;animation:fadeUp .18s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.ecard:hover{border-color:var(--border2);box-shadow:0 2px 10px rgba(0,0,0,.3)}
+.ecard.expanded{border-color:var(--accent)}
+.ecard.default-off{border-left:3px solid rgba(100,116,139,.3)}
+.ecard.default-off.expanded{border-color:var(--muted);border-left-color:var(--muted)}
+
+.ecard-top{padding:9px 11px 7px;display:flex;align-items:flex-start;gap:8px}
+.ecard-id{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent);line-height:1;flex-shrink:0;min-width:44px}
+.ecard.default-off .ecard-id{color:var(--muted)}
+.ecard-main{flex:1;min-width:0}
+.ecard-name{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;line-height:1.2}
+.ecard-meta{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.ecard-tag{font-family:var(--mono);font-size:9px;color:var(--muted2);background:var(--surface3);padding:1px 5px;border-radius:2px;border:1px solid var(--border)}
+.expand-btn{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;flex-shrink:0;transition:color .12s,transform .15s;line-height:1}
+.ecard.expanded .expand-btn{color:var(--accent);transform:rotate(45deg)}
+
+.ecard-desc{padding:0 11px 8px;color:var(--muted);font-size:12px;line-height:1.5;border-top:1px solid var(--border);padding-top:7px}
+
+.ecard-detail{display:none;border-top:1px solid var(--border);background:var(--surface2)}
+.ecard.expanded .ecard-detail{display:block}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr}
+.dblock{padding:8px 11px;border-bottom:1px solid var(--border)}
+.dblock:nth-child(odd){border-right:1px solid var(--border)}
+.dblock.full{grid-column:1/-1;border-right:none}
+.dlabel{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px}
+.dval{font-size:12px;color:var(--text);line-height:1.5}
+.forensic-box{background:rgba(124,92,252,.05);border-left:2px solid var(--accent2);padding:7px 9px;border-radius:0 3px 3px 0;font-size:12px;color:var(--text);line-height:1.55}
+.config-box{background:rgba(57,211,83,.04);border-left:2px solid var(--accent4);padding:7px 9px;border-radius:0 3px 3px 0;font-size:12px;color:var(--text);line-height:1.5}
+.fields-wrap{display:flex;flex-wrap:wrap;gap:3px;margin-top:2px}
+.field-chip{font-family:var(--mono);font-size:9px;background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.12);color:var(--accent);padding:1px 5px;border-radius:2px}
+.tech-badge{font-family:var(--mono);font-size:9px;padding:1px 5px;border-radius:2px;background:rgba(255,107,53,.07);border:1px solid rgba(255,107,53,.2);color:#ff6b35;text-decoration:none;display:inline-block;margin:1px}
+.tech-badge:hover{background:rgba(255,107,53,.12)}
+.ext-link{font-family:var(--mono);font-size:9px;color:var(--accent2);text-decoration:none;border:1px solid rgba(124,92,252,.2);padding:1px 6px;border-radius:2px}
+.ext-link:hover{background:rgba(124,92,252,.06)}
+.copy-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-family:var(--mono);font-size:9px;padding:2px 5px;border-radius:2px;cursor:pointer;margin-top:4px;transition:all .12s}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Sigma chips */
+.sigma-chip{font-family:var(--mono);font-size:8px;font-weight:700;padding:1px 5px;border-radius:2px;background:rgba(255,107,53,.08);color:#ff6b35;border:1px solid rgba(255,107,53,.2);cursor:pointer;display:inline-flex;align-items:center;gap:2px}
+.sigma-chip:hover{background:rgba(255,107,53,.15)}
+.sigma-chips-row{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}
+
+/* List view */
+.elcard{background:var(--surface);border:1px solid var(--border);border-radius:3px;cursor:pointer;transition:border-color .12s;animation:fadeUp .15s ease both;overflow:hidden}
+.elcard:hover{border-color:var(--border2)}
+.elcard.expanded{border-color:var(--accent)}
+.elcard.default-off{border-left:2px solid rgba(100,116,139,.3)}
+.elcard-row{display:flex;align-items:center;gap:8px;padding:6px 11px}
+.elcard-id{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);flex:0 0 44px}
+.elcard.default-off .elcard-id{color:var(--muted)}
+.elcard-name{font-size:12px;color:var(--text);flex:0 0 200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.elcard-tag{font-family:var(--mono);font-size:9px;color:var(--muted2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.elcard-arr{color:var(--muted);font-size:11px;flex-shrink:0;transition:transform .12s}
+.elcard.expanded .elcard-arr{transform:rotate(90deg);color:var(--accent)}
+
+/* ── SIGMA TAB ── */
+.sigma-page{padding:24px 36px;max-width:1440px;margin:0 auto}
+.sigma-intro{background:var(--surface);border:1px solid rgba(255,107,53,.2);border-radius:5px;padding:16px 20px;margin-bottom:24px}
+.sigma-intro h2{font-size:16px;font-weight:700;color:#fff;margin-bottom:6px}
+.sigma-intro p{color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:4px}
+.sigma-stats{display:flex;gap:18px;flex-wrap:wrap;margin-top:8px}
+.sigma-stat{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.sigma-stat strong{color:#ff6b35}
+.sigma-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.sigma-search-wrap{position:relative;flex:1;min-width:200px;max-width:380px}
+.sigma-search-ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none}
+#sigma-search{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:7px 9px 7px 28px;border-radius:3px;outline:none}
+#sigma-search:focus{border-color:#ff6b35}
+#sigma-search::placeholder{color:var(--muted2)}
+.tactic-chips{display:flex;gap:4px;flex-wrap:wrap}
+.tactic-chip{font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 7px;border-radius:2px;cursor:pointer;border:1px solid transparent;transition:all .12s;user-select:none}
+.tactic-chip.dim{opacity:.3}
+.sigma-tactic-section{margin-bottom:24px}
+.sigma-tactic-hdr{display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:9px}
+.sigma-tactic-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.sigma-tactic-name{font-size:13px;font-weight:700;color:#fff;flex:1}
+.sigma-tactic-id{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.sigma-tactic-count{font-family:var(--mono);font-size:10px;background:var(--surface3);color:var(--muted);padding:1px 6px;border-radius:8px}
+.sigma-rules-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:8px}
+.src-card{background:var(--surface);border:1px solid rgba(255,107,53,.15);border-radius:4px;overflow:hidden;cursor:pointer;transition:all .12s;animation:fadeUp .18s ease both}
+.src-card:hover{border-color:rgba(255,107,53,.35);box-shadow:0 3px 12px rgba(0,0,0,.3)}
+.src-card.expanded{border-color:#ff6b35}
+.src-top{padding:10px 12px 7px;display:flex;align-items:flex-start;gap:8px}
+.slevel-badge{font-family:var(--mono);font-size:8px;font-weight:700;padding:1px 5px;border-radius:2px;text-transform:uppercase;flex-shrink:0}
+.slb-critical{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
+.slb-high{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2)}
+.slb-medium{background:rgba(245,158,11,.1);color:#f59e0b;border:1px solid rgba(245,158,11,.2)}
+.slb-low{background:rgba(100,116,139,.08);color:var(--muted);border:1px solid var(--border)}
+.src-main{flex:1;min-width:0}
+.src-title{font-size:12px;font-weight:700;color:#fff;margin-bottom:4px;line-height:1.3}
+.src-meta{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.src-tech{font-family:var(--mono);font-size:8px;padding:1px 5px;border-radius:2px;background:rgba(255,107,53,.08);color:#ff6b35;border:1px solid rgba(255,107,53,.2)}
+.src-eids{font-family:var(--mono);font-size:8px;color:var(--muted2)}
+.src-expand-btn{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;transition:color .12s,transform .15s;flex-shrink:0}
+.src-card.expanded .src-expand-btn{color:#ff6b35;transform:rotate(45deg)}
+.src-desc{padding:0 12px 8px;color:var(--muted);font-size:12px;line-height:1.5;border-top:1px solid var(--border);padding-top:7px}
+.src-detail{display:none;border-top:1px solid var(--border);background:var(--surface2)}
+.src-card.expanded .src-detail{display:block}
+.srd-block{padding:8px 12px;border-bottom:1px solid var(--border)}
+.srd-label{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px}
+.condition-box{font-family:var(--mono);font-size:10px;background:rgba(255,107,53,.04);border-left:2px solid #ff6b35;padding:7px 9px;border-radius:0 3px 3px 0;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.fp-box{font-size:12px;color:var(--muted);background:rgba(245,158,11,.04);border-left:2px solid var(--warn);padding:7px 9px;border-radius:0 3px 3px 0;line-height:1.5}
+.eid-tag{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:2px;background:rgba(0,229,255,.08);color:var(--accent);border:1px solid rgba(0,229,255,.2);cursor:pointer;display:inline-block;margin:1px}
+.eid-tag:hover{background:rgba(0,229,255,.15)}
+.sigma-ext-link{font-family:var(--mono);font-size:9px;color:#ff6b35;text-decoration:none;border:1px solid rgba(255,107,53,.2);padding:1px 6px;border-radius:2px}
+.sigma-ext-link:hover{background:rgba(255,107,53,.06)}
+
+.no-results{text-align:center;padding:60px;color:var(--muted)}
+.no-results-icon{font-size:40px;margin-bottom:12px;opacity:.3}
+.no-results h3{font-size:16px;color:var(--text);margin-bottom:6px}
+mark{background:rgba(0,229,255,.2);color:var(--accent);border-radius:2px;padding:0 2px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface3);border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:11px;padding:6px 12px;border-radius:3px;z-index:9999;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
+
+@media(max-width:860px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border);top:48px}
+  .events-grid{grid-template-columns:1fr}
+  .detail-grid{grid-template-columns:1fr}
+  .dblock:nth-child(odd){border-right:none}
+  header,.main,.sigma-page{padding-left:14px;padding-right:14px}
+}
+
+/* Full database search */
+.db-search-bar{display:flex;align-items:center;gap:10px;margin-top:18px;padding:12px 14px;background:rgba(255,107,53,.04);border:1px solid rgba(255,107,53,.15);border-radius:4px}
+.db-search-ico{font-size:16px;flex-shrink:0}
+.db-search-label{font-family:var(--sans);font-size:12px;color:var(--muted);flex:1}
+.db-search-label strong{color:#ff6b35}
+#db-search-input{background:var(--surface2);border:1px solid rgba(255,107,53,.3);color:var(--text);font-family:var(--mono);font-size:12px;padding:6px 10px;border-radius:3px;outline:none;width:260px;flex-shrink:0}
+#db-search-input:focus{border-color:#ff6b35}
+#db-search-input::placeholder{color:var(--muted2)}
+.db-search-btn{font-family:var(--mono);font-size:11px;font-weight:700;padding:6px 14px;border-radius:3px;border:1px solid rgba(255,107,53,.4);background:rgba(255,107,53,.1);color:#ff6b35;cursor:pointer;transition:all .12s;flex-shrink:0}
+.db-search-btn:hover{background:rgba(255,107,53,.2)}
+.db-search-btn:disabled{opacity:.4;cursor:not-allowed}
+.db-results-section{margin-top:20px;display:none}
+.db-results-section.visible{display:block}
+.db-results-header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.2);border-radius:4px;margin-bottom:10px}
+.db-results-title{font-size:13px;font-weight:700;color:#ff6b35;flex:1}
+.db-results-count{font-family:var(--mono);font-size:10px;background:rgba(255,107,53,.1);color:#ff6b35;padding:1px 7px;border-radius:8px}
+.db-results-note{font-family:var(--mono);font-size:10px;color:var(--muted2)}
+.db-clear-btn{font-family:var(--mono);font-size:9px;padding:2px 8px;border:1px solid var(--border2);background:none;color:var(--muted);border-radius:2px;cursor:pointer}
+.db-clear-btn:hover{border-color:var(--accent);color:var(--accent)}
+.db-loading{font-family:var(--mono);font-size:11px;color:var(--muted);padding:20px;text-align:center;display:none}
+.db-loading.visible{display:block}
+.src-card.db-result{border-color:rgba(255,107,53,.08);opacity:.9}
+.src-card.db-result::before{content:'DB';font-family:var(--mono);font-size:7px;font-weight:700;color:#ff6b35;background:rgba(255,107,53,.1);padding:1px 4px;border-radius:2px;position:absolute;top:8px;right:36px}
+.src-card.db-result{position:relative}
+
+</style>
+</head>
+<body>
+
+<div class="top-tabs">
+  <span class="tab-logo">⊞ WinSec DFIR v0.1</span>
+  <button class="tab-btn active" id="tab-events-btn" onclick="switchTab('events',this)">🔵 Sysmon Event IDs (30)</button>
+  <button class="tab-btn sigma-tab" id="tab-sigma-btn" onclick="switchTab('sigma',this)">⚡ Sigma Detection Rules (80 curated / 195 total)</button>
+</div>
+
+<div class="tab-content active" id="tab-events">
+<header>
+  <div class="header-inner">
+    <div class="header-badge">DFIR Reference v0.1</div>
+    <h1>Sysmon <em>Event ID Reference</em></h1>
+    <p class="header-sub">Complete reference for all Sysmon v15.2 event IDs sourced from <a href="https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon" target="_blank" style="color:var(--accent4)">Microsoft Sysinternals documentation</a>. Includes key fields, forensic value, noise level, and configuration guidance. <strong style="color:var(--accent4)">Log channel: Microsoft-Windows-Sysmon/Operational</strong></p>
+    <div class="stats-row">
+      <div class="stat"><span class="stat-num">30</span><span class="stat-label">Event IDs</span></div>
+      <div class="stat"><span class="stat-num" style="color:#39d353">20</span><span class="stat-label">Default On</span></div>
+      <div class="stat"><span class="stat-num" style="color:var(--muted)">10</span><span class="stat-label">Default Off</span></div>
+      <div class="stat"><span class="stat-num" style="color:#ff6b35">80/195</span><span class="stat-label">Sigma Rules</span></div>
+    </div>
+    <div class="source-legend">
+      <span class="src-badge src-ms">Sysmon v15.2 — Microsoft Sysinternals (March 2026)</span>
+      <span class="src-badge src-sigma">SigmaHQ Detection Rules</span>
+      <span class="src-badge src-uws">Ultimate Windows Security</span>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="search-wrap">
+      <span class="search-ico">⌕</span>
+      <input type="text" id="search" placeholder="Search events, fields, techniques..." autocomplete="off" spellcheck="false">
+    </div>
+    <div class="filter-section">
+      <span class="sec-label">Noise Level</span>
+      <div class="chip-row">
+        <span class="filter-chip" data-val="ALL">All</span>
+        <span class="filter-chip dim" data-noise="Very Low">V.Low</span>
+        <span class="filter-chip dim" data-noise="Low">Low</span>
+        <span class="filter-chip dim" data-noise="Medium">Med</span>
+        <span class="filter-chip dim" data-noise="High">High</span>
+        <span class="filter-chip dim" data-noise="Very High">V.High</span>
+      </div>
+    </div>
+    <div class="filter-section">
+      <span class="sec-label">Default State</span>
+      <div class="chip-row">
+        <span class="filter-chip dim" data-enabled="true">🟢 Default On</span>
+        <span class="filter-chip dim" data-enabled="false">⚪ Requires Config</span>
+      </div>
+    </div>
+    <div class="cat-section" id="event-nav"></div>
+  </aside>
+
+  <main class="main">
+    <div class="toolbar">
+      <div class="results-info">Showing <strong id="results-count">30</strong> of 30 events</div>
+      <div class="controls">
+        <select class="sort-select" id="sort-select">
+          <option value="id">Event ID ↑</option>
+          <option value="name">Name A–Z</option>
+          <option value="noise">By Noise Level</option>
+        </select>
+        <div class="view-toggle">
+          <button class="view-btn active" id="grid-btn">⊞</button>
+          <button class="view-btn" id="list-btn">☰</button>
+        </div>
+      </div>
+    </div>
+    <div id="events-container"></div>
+  </main>
+</div>
+</div><!-- /tab-events -->
+
+<!-- SIGMA TAB -->
+<div class="tab-content" id="tab-sigma">
+  <div class="sigma-page">
+    <div class="sigma-intro">
+      <h2>⚡ Sigma Detection Playbook — Sysmon</h2>
+      <p>40 curated highest-signal Sigma rules from <a href="https://github.com/SigmaHQ/sigma/tree/master/rules/windows" target="_blank" style="color:#ff6b35">SigmaHQ/sigma</a> using Sysmon events as their primary log source. Rules cover all key Sysmon event types. Click any EID chip to jump to that event in the reference tab.</p>
+      <p style="font-size:11px;color:var(--muted2)">Convert to your SIEM: <a href="https://sigconverter.io" target="_blank" style="color:#ff6b35">sigconverter.io</a> · License: <a href="https://github.com/SigmaHQ/Detection-Rule-License" target="_blank" style="color:#ff6b35">DRL 1.1</a></p>
+      <div class="sigma-stats">
+        <span class="sigma-stat"><strong>80</strong> curated rules</span>
+        <span class="sigma-stat"><strong>24</strong> event IDs covered</span>
+      <span class="sigma-stat">Full DB: <strong>195</strong> rules · <a href="sysmon_rules_complete.json" style="color:#ff6b35;font-family:var(--mono);font-size:10px" download>⬇ sysmon_rules_complete.json</a></span>
+        <span class="sigma-stat"><strong>11</strong> tactics covered</span>
+      </div>
+    </div>
+    <div class="sigma-toolbar">
+      <div class="sigma-search-wrap">
+        <span class="sigma-search-ico">⌕</span>
+        <input type="text" id="sigma-search" placeholder="Search rules, techniques, EIDs..." spellcheck="false">
+      </div>
+      <div class="tactic-chips" id="sigma-tactic-chips"></div>
+    </div>
+    <div id="sigma-content"></div>
+
+    <!-- Full DB search bar -->
+    <div class="db-search-bar" id="db-search-bar">
+      <span class="db-search-ico">🗄️</span>
+      <span class="db-search-label">Not finding what you need? Search the <strong>full database of 195 rules</strong> — results not in the curated set appear below.</span>
+      <input type="text" id="db-search-input" placeholder="e.g. mimikatz, rundll32, T1218..." spellcheck="false">
+      <button class="db-search-btn" id="db-search-btn" onclick="searchFullDB()">Search DB</button>
+    </div>
+    <div class="db-loading" id="db-loading">⏳ Searching full database...</div>
+    <!-- Full DB results (appended below curated) -->
+    <div class="db-results-section" id="db-results-section">
+      <div class="db-results-header">
+        <span class="db-results-title">🗄️ Full Database Results</span>
+        <span class="db-results-count" id="db-results-count">0 matches</span>
+        <span class="db-results-note">Not in curated set — from complete 195-rule database</span>
+        <button class="db-clear-btn" onclick="clearDBResults()">✕ Clear</button>
+      </div>
+      <div id="db-results-grid" class="sigma-rules-grid"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast">Copied!</div>
+
+<script>
+var EVENTS=[{"id": 1, "name": "Process Create", "tag": "ProcessCreate", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": true, "description": "Logs every new process creation with extended detail: full command line, parent process, hashes (SHA1/MD5/SHA256/IMPHASH), user context, integrity level, and a ProcessGUID for cross-event correlation.", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "FileVersion", "Description", "Product", "Company", "OriginalFileName", "CommandLine", "CurrentDirectory", "User", "LogonGuid", "LogonId", "TerminalSessionId", "IntegrityLevel", "Hashes", "ParentProcessGuid", "ParentProcessId", "ParentImage", "ParentCommandLine", "ParentUser"], "forensic_value": "Primary execution evidence artifact. CommandLine reveals attacker intent. ParentImage/ParentCommandLine identifies process injection and suspicious parent-child relationships (e.g., Word.exe \u2192 cmd.exe). OriginalFileName detects renamed binaries. Hashes enable threat intel lookups and YARA matching. IntegrityLevel=High/System indicates elevation.", "noise_level": "High", "config_note": "Enable command line logging via Group Policy: Administrative Templates \u2192 System \u2192 Audit Process Creation \u2192 Include command line in process creation events.", "techniques": ["T1059", "T1566.001", "T1218", "T1055", "T1036"], "sigma_path": "rules/windows/process_creation", "sigma_example": "proc_creation_win_susp_cmd_shells.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-1-process-creation"}, {"id": 2, "name": "File Creation Time Changed", "tag": "FileCreateTime", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": false, "filterable": true, "description": "Logged when a process explicitly modifies a file's creation timestamp. Used by malware to blend backdoors into existing system files by backdating them.", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "TargetFilename", "CreationUtcTime", "PreviousCreationUtcTime"], "forensic_value": "Timestomping detection. PreviousCreationUtcTime vs CreationUtcTime reveals the original timestamp. The modifying process (Image) is the attacker tool. Correlate with EID 11 (FileCreate) for the same file to establish full timeline.", "noise_level": "Low", "config_note": "Noisy if many media/download tools are active. Use filters to exclude known-good processes.", "techniques": ["T1070.006"], "sigma_path": "rules/windows/file", "sigma_example": "file_event_win_susp_creation_time_change.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-2-a-process-changed-a-file-creation-time"}, {"id": 3, "name": "Network Connection", "tag": "NetworkConnect", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": false, "filterable": true, "description": "Logs TCP/UDP connections linked to a process via ProcessGuid. Includes source/destination IPs, ports, hostnames (via reverse DNS), and IPv6 status. Disabled by default due to high volume.", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "User", "Protocol", "Initiated", "SourceIsIpv6", "SourceIp", "SourceHostname", "SourcePort", "SourcePortName", "DestinationIsIpv6", "DestinationIp", "DestinationHostname", "DestinationPort", "DestinationPortName"], "forensic_value": "C2 channel detection and lateral movement tracking. Image field identifies which process is making the connection \u2014 alert on LOLBins (cmd.exe, powershell.exe, mshta.exe, certutil.exe, regsvr32.exe, rundll32.exe) connecting outbound. DestinationHostname reveals C2 domains. Correlate ProcessGuid with EID 1 for full process context.", "noise_level": "Very High", "config_note": "Must be explicitly enabled. Use aggressive filtering \u2014 exclude browser, update, and AV processes. Focus on high-risk process images making unexpected outbound connections.", "techniques": ["T1071", "T1219", "T1572", "T1021"], "sigma_path": "rules/windows/network_connection", "sigma_example": "net_connection_win_susp_outbound_connection.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-3-network-connection"}, {"id": 4, "name": "Sysmon Service State Changed", "tag": "n/a", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": false, "description": "Reports Sysmon service start or stop. Cannot be filtered. A stop event may indicate an attacker attempting to disable Sysmon.", "key_fields": ["UtcTime", "State", "Version", "SchemaVersion"], "forensic_value": "Sysmon stop events (State=Stopped) immediately preceding other activity indicate an attacker disabling monitoring. Alert on EID 4 State=Stopped followed by any EID from a suspicious process.", "noise_level": "Very Low", "config_note": "Cannot be filtered. Always logged.", "techniques": ["T1562.001"], "sigma_path": "rules/windows/other", "sigma_example": "sysmon_config_modification.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-4-sysmon-service-state-changed"}, {"id": 5, "name": "Process Terminated", "tag": "ProcessTerminate", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": true, "description": "Reports when a process terminates, with ProcessGuid and ProcessId for correlation with EID 1 (creation) to calculate process lifetime.", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "User"], "forensic_value": "Correlate with EID 1 to calculate process lifetime. Short-lived processes executing suspicious commands and immediately terminating are IOCs (e.g., cmd.exe running for <1 second via WMI). Useful for detecting execution-and-exit patterns.", "noise_level": "High", "config_note": "Usually filtered aggressively or disabled. Most value when correlated with EID 1.", "techniques": ["T1059", "T1047"], "sigma_path": "rules/windows/process_creation", "sigma_example": "", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-5-process-terminated"}, {"id": 6, "name": "Driver Loaded", "tag": "DriverLoad", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": true, "description": "Logs kernel driver loading with hashes, signature information, and whether the file was removed after loading. Critical for rootkit and BYOVD (Bring Your Own Vulnerable Driver) detection.", "key_fields": ["UtcTime", "ImageLoaded", "Hashes", "Signed", "Signature", "SignatureStatus"], "forensic_value": "Unsigned or revoked drivers are critical IOCs. BYOVD attacks load legitimate but vulnerable drivers (LOLDrivers \u2014 loldrivers.io) to disable security tools or gain ring-0 access. SignatureStatus=revoked or Signed=false are immediate alerts. Correlate Hashes against loldrivers.io and VirusTotal.", "noise_level": "Low", "config_note": "Exclude Microsoft/Windows signed drivers to reduce noise. Alert on any unsigned or revoked-signature driver.", "techniques": ["T1014", "T1543.003", "T1562.001"], "sigma_path": "rules/windows/driver_load", "sigma_example": "driver_load_win_vuln_drivers.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-6-driver-loaded"}, {"id": 7, "name": "Image Loaded", "tag": "ImageLoad", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": false, "filterable": true, "description": "Logs DLL/module loads into processes, with hash and signature information. Disabled by default \u2014 extremely high volume. Key for detecting DLL injection and LOLBin abuse.", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "ImageLoaded", "FileVersion", "Description", "Product", "Company", "OriginalFileName", "Hashes", "Signed", "Signature", "SignatureStatus", "User"], "forensic_value": "DLL injection and side-loading detection. Unsigned DLLs loaded into signed processes are IOCs. Correlate ImageLoaded path (unusual directories like %TEMP%, %APPDATA%) with hash lookups. Detect reflective DLL injection \u2014 module loaded from unusual path or memory region. Alert on known malicious DLL names or hashes.", "noise_level": "Very High", "config_note": "Must be explicitly enabled with -l. Requires aggressive filtering to be practical. Focus on specific suspicious DLL names, paths, or processes of interest.", "techniques": ["T1055.001", "T1574.002", "T1574.001"], "sigma_path": "rules/windows/image_load", "sigma_example": "image_load_win_susp_dll_load.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-7-image-loaded"}, {"id": 8, "name": "CreateRemoteThread", "tag": "CreateRemoteThread", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": true, "description": "Detects when a process creates a thread in another process \u2014 the primary technique for code injection. Records source/target process, start address, StartModule, and StartFunction.", "key_fields": ["UtcTime", "SourceProcessGuid", "SourceProcessId", "SourceImage", "TargetProcessGuid", "TargetProcessId", "TargetImage", "NewThreadId", "StartAddress", "StartModule", "StartFunction", "SourceUser", "TargetUser"], "forensic_value": "Process injection detection. SourceImage \u2192 TargetImage pairs reveal injection patterns. StartModule=null or StartFunction=null indicates shellcode injection (no module backing the start address). Classic pairs: unknown process \u2192 lsass.exe (credential theft), explorer.exe \u2192 svchost.exe (hollow process), PowerShell \u2192 werfault.exe (early injection).", "noise_level": "Medium", "config_note": "Some legitimate tools use CreateRemoteThread (AV, debuggers). Exclude known-good source/target pairs.", "techniques": ["T1055.003", "T1055", "T1003.001"], "sigma_path": "rules/windows/create_remote_thread", "sigma_example": "create_remote_thread_win_susp_target_processes.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-8-createremotethread"}, {"id": 9, "name": "RawAccessRead", "tag": "RawAccessRead", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": true, "description": "Detects raw disk/volume reads using the \\\\.\\  notation, bypassing the file system and normal access controls. Used by malware to read locked files and exfiltrate data.", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "Device", "User"], "forensic_value": "Raw disk reads are highly suspicious from non-backup processes. Attackers use raw volume access to read the NTDS.dit (Active Directory database), SAM hive, or other locked files without triggering standard file access auditing. Alert on any process accessing \\\\.\\ PHYSICALDRIVE or \\\\.\\ HarddiskVolume that is not a backup or disk utility.", "noise_level": "Low", "config_note": "Exclude known backup tools (Veeam, BackupExec, Windows Backup) and disk analysis tools.", "techniques": ["T1003.003", "T1003.002", "T1005"], "sigma_path": "rules/windows/raw_access_thread", "sigma_example": "rawaccess_win_rawaccess_volume_read.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-9-rawaccessread"}, {"id": 10, "name": "Process Access", "tag": "ProcessAccess", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": true, "description": "Reports when a process opens another process with specific access rights. The GrantedAccess mask and CallTrace (stack trace) identify the access purpose. Primary LSASS credential dumping detector.", "key_fields": ["UtcTime", "SourceProcessGUID", "SourceProcessId", "SourceThreadId", "SourceImage", "TargetProcessGUID", "TargetProcessId", "TargetImage", "GrantedAccess", "CallTrace", "SourceUser", "TargetUser"], "forensic_value": "LSASS credential dumping detection. TargetImage=lsass.exe with GrantedAccess=0x1010 or 0x1410 or 0x1fffff is a Mimikatz/credential dumper signature. CallTrace reveals the injected module performing the access. Mavinject, Cobalt Strike, and Mimikatz all produce characteristic GrantedAccess patterns against lsass.exe.", "noise_level": "High", "config_note": "Alert specifically on TargetImage=lsass.exe with unexpected GrantedAccess masks. Exclude SYSTEM, AV/EDR processes.", "techniques": ["T1003.001", "T1055", "T1134"], "sigma_path": "rules/windows/process_access", "sigma_example": "proc_access_win_lsass_access.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-10-processaccess"}, {"id": 11, "name": "File Created", "tag": "FileCreate", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": true, "description": "Logs file creation or overwrite operations. Captures the creating process, target filename, and creation timestamp. Useful for monitoring autostart locations, temp directories, and download folders.", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "TargetFilename", "CreationUtcTime", "User"], "forensic_value": "Malware drop detection. Monitor creation of executables in %TEMP%, %APPDATA%, %PUBLIC%, Downloads. Alert on unexpected executables created by Office applications, browsers, or scripts. Startup folder writes create persistence evidence. Combine with EID 1 ProcessGuid to identify the parent process chain that created the file.", "noise_level": "High", "config_note": "Highly noisy \u2014 must filter aggressively. Focus on file extensions (.exe, .dll, .ps1, .bat, .vbs, .hta, .lnk) in suspicious paths.", "techniques": ["T1566.001", "T1547.001", "T1036", "T1105"], "sigma_path": "rules/windows/file", "sigma_example": "file_event_win_susp_creation_in_public_folder.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-11-filecreate"}, {"id": 12, "name": "Registry Object Created/Deleted", "tag": "RegistryEvent", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": true, "description": "Logs registry key and value creation/deletion operations. EventType field specifies CreateKey, DeleteKey, CreateValue, or DeleteValue. Maps keys using abbreviated root names (HKLM, HKU, HKCR).", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "EventType", "TargetObject", "Details", "User"], "forensic_value": "Persistence and defense evasion via registry. Monitor Run key additions, service key creation, IFEO Debugger values, AppInit_DLLs, AppCertDlls, Winlogon key changes. EventType=DeleteValue on security-relevant keys may indicate cleanup. Combine with ProcessGuid from EID 1 to identify the full process chain.", "noise_level": "High", "config_note": "Focus on high-value autostart and persistence key paths. Exclude SYSTEM, Installer, and known-good software during quiet periods.", "techniques": ["T1547.001", "T1546.012", "T1546.010", "T1112"], "sigma_path": "rules/windows/registry", "sigma_example": "registry_event_runkey_modification.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-12-registryevent-object-create-and-delete"}, {"id": 13, "name": "Registry Value Set", "tag": "RegistryEvent", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": true, "description": "Logs registry value set operations for DWORD and QWORD value types. Details field shows the new value written. Critical for detecting binary registry modifications by malware.", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "EventType", "TargetObject", "Details", "User"], "forensic_value": "Complements EID 12 for value modification monitoring. The Details field shows the exact value written \u2014 enabling detection of specific values (e.g., WDigest UseLogonCredential=1, DisableAntiSpyware=1, EnableLUA=0). Alert on security-disabling registry value changes by non-admin processes.", "noise_level": "High", "config_note": "Scope to specific high-value registry paths. Pair with EID 12 for complete registry change coverage.", "techniques": ["T1112", "T1562.001", "T1003.001", "T1547"], "sigma_path": "rules/windows/registry", "sigma_example": "registry_event_value_set_wdigest.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-13-registryevent-value-set"}, {"id": 14, "name": "Registry Key/Value Renamed", "tag": "RegistryEvent", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": true, "description": "Logs registry key and value rename operations, recording both old name (TargetObject) and new name (NewName).", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "EventType", "TargetObject", "NewName", "User"], "forensic_value": "Attacker technique: rename a registry key or value to mimic a legitimate name (e.g., renaming a malware Run key entry to look like a system process). NewName field reveals the attacker's chosen camouflage name.", "noise_level": "Low", "config_note": "Low volume \u2014 fewer false positives than EID 12/13. Alert broadly.", "techniques": ["T1036", "T1112"], "sigma_path": "rules/windows/registry", "sigma_example": "registry_event_key_renamed.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-14-registryevent-key-and-value-rename"}, {"id": 15, "name": "File Stream Created (Mark of the Web)", "tag": "FileCreateStreamHash", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": true, "description": "Logs creation of named file streams, specifically the Zone.Identifier ADS attached by browsers to downloaded files. Captures hash of both the base file and the stream content.", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "TargetFilename", "CreationUtcTime", "Hash", "Contents", "User"], "forensic_value": "Download and phishing delivery detection. Zone.Identifier streams prove a file was downloaded from the internet (ZoneId=3) vs. internal network (ZoneId=2) vs. local (ZoneId=0). Contents field includes ReferrerUrl and HostUrl \u2014 the exact URL the file was downloaded from. Hash enables threat intel. Absence of Zone.Identifier on a known-downloaded file indicates MOTW bypass (T1553.005).", "noise_level": "Medium", "config_note": "Manageable volume \u2014 focus on executable file extensions. The Contents/URL data is highly valuable for phishing investigation.", "techniques": ["T1566.001", "T1566.002", "T1553.005", "T1105"], "sigma_path": "rules/windows/file", "sigma_example": "file_event_win_zone_identifier_streams.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-15-filecreatestreamhash"}, {"id": 16, "name": "Sysmon Configuration Changed", "tag": "n/a", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": false, "description": "Logs changes to the Sysmon configuration (filtering rules updated). Cannot be filtered. Any unexpected config change may indicate an attacker modifying Sysmon to blind it.", "key_fields": ["UtcTime", "Configuration", "ConfigurationFileHash", "User"], "forensic_value": "Alert on unexpected Sysmon config changes \u2014 especially those that add broad exclude rules or disable key event types (process creation, network connections). Attackers who compromise a system may reconfigure Sysmon to stop logging their activity.", "noise_level": "Very Low", "config_note": "Cannot be filtered. Always logged.", "techniques": ["T1562.001"], "sigma_path": "rules/windows/other", "sigma_example": "sysmon_config_modification.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-16-serviceconfigurationchange"}, {"id": 17, "name": "Named Pipe Created", "tag": "PipeEvent", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": true, "description": "Logs named pipe creation events. Malware uses named pipes for inter-process communication and C2 channels. Cobalt Strike and other C2 frameworks use characteristic pipe names.", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "PipeName", "Image", "User"], "forensic_value": "C2 framework detection via pipe name patterns. Known Cobalt Strike default pipes: \\\\\\\\pipe\\\\msagent_*, \\\\\\\\pipe\\\\status_*, \\\\\\\\pipe\\\\MSSE-*. Metasploit: \\\\\\\\pipe\\\\meterpreter. Alert on pipes with random-looking names created by unexpected processes. PipeName often contains GUID-like strings for custom beacons.", "noise_level": "Low", "config_note": "Build an allowlist of known legitimate pipe names for your environment. Alert on anything not in the allowlist.", "techniques": ["T1071", "T1055", "T1570"], "sigma_path": "rules/windows/pipe_created", "sigma_example": "pipe_created_win_susp_cobaltstrike_pipe_patterns.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-17-pipeevent-pipe-created"}, {"id": 18, "name": "Named Pipe Connected", "tag": "PipeEvent", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": true, "description": "Logs named pipe connection events (client connecting to server). Complements EID 17 to track the full pipe lifecycle.", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "PipeName", "Image", "User"], "forensic_value": "Lateral movement via named pipes. Remote clients connecting to suspicious pipes over SMB appear as EID 18. Correlate with 5145 from Security log for the same pipe name. Cobalt Strike lateral movement via named pipe: source process connects to pipe on remote host.", "noise_level": "Low", "config_note": "Pair with EID 17. Same allowlist approach applies.", "techniques": ["T1021.002", "T1071", "T1570"], "sigma_path": "rules/windows/pipe_created", "sigma_example": "pipe_created_win_susp_pipe_connection.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-18-pipeevent-pipe-connected"}, {"id": 19, "name": "WMI Event Filter Registered", "tag": "WmiEvent", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": true, "description": "Logs WMI event filter registration. WMI subscriptions are a fileless persistence mechanism that survives reboots. This logs the filter (trigger condition).", "key_fields": ["UtcTime", "EventType", "User", "Operation", "Consumer", "Filter", "Name", "Type", "Query"], "forensic_value": "WMI subscription persistence detection \u2014 one of the three events needed to detect WMI-based persistence (filter + consumer + binding). Any unexpected WMI filter registration should be investigated. Common trigger queries include SelectFrom Win32_LogonSession and __InstanceCreationEvent targeting Win32_Process.", "noise_level": "Low", "config_note": "Low volume in normal environments. Alert broadly \u2014 legitimate WMI subscriptions are uncommon outside enterprise management software.", "techniques": ["T1546.003"], "sigma_path": "rules/windows/wmi_event", "sigma_example": "wmi_event_susp_wmi_filter.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-19-wmievent-wmieventfilter-activity-detected"}, {"id": 20, "name": "WMI Event Consumer Registered", "tag": "WmiEvent", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": true, "description": "Logs WMI consumer registration. The consumer defines what action is taken when the filter fires (e.g., execute a command, run a script).", "key_fields": ["UtcTime", "EventType", "User", "Operation", "Consumer", "Filter", "Name", "Type", "Destination"], "forensic_value": "Part of WMI persistence trinity (EID 19+20+21). Consumer type and Destination reveal the payload \u2014 CommandLineEventConsumer executes a command; ActiveScriptEventConsumer runs VBScript/JScript. Destination field contains the actual malicious command or script. Critical IOC.", "noise_level": "Low", "config_note": "Alert on CommandLineEventConsumer and ActiveScriptEventConsumer types from non-admin processes.", "techniques": ["T1546.003"], "sigma_path": "rules/windows/wmi_event", "sigma_example": "wmi_event_susp_wmi_consumer.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-20-wmievent-wmieventconsumer-activity-detected"}, {"id": 21, "name": "WMI Consumer-Filter Binding", "tag": "WmiEvent", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": true, "description": "Logs when a WMI consumer is bound to a filter, completing the WMI subscription and activating the persistence mechanism.", "key_fields": ["UtcTime", "EventType", "User", "Operation", "Consumer", "Filter"], "forensic_value": "The binding event activates WMI persistence \u2014 when this event occurs the subscription is live. Consumer and Filter fields name the registered components from EID 19 and 20. Correlate all three events (19+20+21) from the same session to reconstruct the full WMI subscription.", "noise_level": "Very Low", "config_note": "Any occurrence outside of known management software is suspicious.", "techniques": ["T1546.003"], "sigma_path": "rules/windows/wmi_event", "sigma_example": "wmi_event_susp_wmi_consumer_to_filter.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-21-wmievent-wmieventconsumertofilter-activity-detected"}, {"id": 22, "name": "DNS Query", "tag": "DnsQuery", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": false, "filterable": true, "description": "Logs DNS queries made by processes with result and whether the response was cached. Requires Windows 8.1+. Provides process-linked DNS resolution visibility.", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "QueryName", "QueryStatus", "QueryResults", "Image", "User"], "forensic_value": "C2 domain detection, DGA (Domain Generation Algorithm) identification, and DNS tunneling. Unexpected processes resolving unusual domains are IOCs. QueryResults shows the resolved IPs \u2014 correlate with threat intel. High-volume DNS queries by a single process may indicate DNS tunneling (EID 3 + EID 22 correlation). LOLBins making DNS queries are suspicious.", "noise_level": "High", "config_note": "Must be enabled. Filter out known-good processes and domain patterns (Windows Update, AV, CDN). Focus on LOLBins and scripting engines making unexpected DNS queries.", "techniques": ["T1071.004", "T1568", "T1008"], "sigma_path": "rules/windows/dns_query", "sigma_example": "dns_query_win_susp_malware_domains.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-22-dnsevent-dns-query"}, {"id": 23, "name": "File Deleted (Archived)", "tag": "FileDelete", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": false, "filterable": true, "description": "Logs file deletion AND preserves a copy of the deleted file in the ArchiveDirectory (C:\\Sysmon by default). Provides both an event log and file recovery capability.", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "TargetFilename", "Hashes", "IsExecutable", "Archived", "User"], "forensic_value": "Malware cleanup detection and file recovery. Ransomware, wipers, and cleanup scripts show high-volume file deletions. Archived=true means the deleted file is in C:\\Sysmon \u2014 recoverable for analysis. IsExecutable=true for deleted executables is a high-priority IOC. Correlate with EID 11 (creation) to reconstruct file lifecycle.", "noise_level": "Medium", "config_note": "Monitor ArchiveDirectory size \u2014 can grow quickly. Filter to executable file types. Disable if disk space is a constraint (use EID 26 instead).", "techniques": ["T1070.004", "T1485", "T1561"], "sigma_path": "rules/windows/file", "sigma_example": "file_delete_win_susp_file_deletion.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-23-filedelete-file-delete-archived"}, {"id": 24, "name": "Clipboard Change", "tag": "ClipboardChange", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": false, "filterable": true, "description": "Logs changes to clipboard content. Can capture credentials, sensitive data, or code copied by the user or by clipboard-hijacking malware (cryptojacking address substitution).", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "Session", "ClientInfo", "Hashes", "Archived", "User"], "forensic_value": "Clipboard hijacking detection \u2014 malware monitors clipboard for cryptocurrency addresses and substitutes attacker addresses. High-frequency clipboard changes from unusual processes are IOCs. Privacy-sensitive: clipboard may contain passwords or confidential data. Use with care in enterprise environments.", "noise_level": "Low", "config_note": "Disabled by default. Consider privacy implications before enabling. Limit to specific processes of interest.", "techniques": ["T1115", "T1056.001"], "sigma_path": "rules/windows/other", "sigma_example": "", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-24-clipboardchange-new-content-in-the-clipboard"}, {"id": 25, "name": "Process Tampering", "tag": "ProcessTampering", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": true, "description": "Detects process image manipulation techniques: process hollowing (replacing the contents of a legitimate process with malicious code) and process herpaderping (writing malicious code after the file is mapped by the loader).", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "Type", "User"], "forensic_value": "Process hollowing and herpaderping are EDR evasion techniques that make malicious code appear to run inside a trusted process binary. EID 25 is one of the few reliable host-based detectors for these techniques. Type field specifies 'Image is replaced' (hollowing) or 'Image is locked for access' (herpaderping). Alert on all EID 25 events \u2014 very low legitimate rate.", "noise_level": "Very Low", "config_note": "Alert on all occurrences. Near-zero false positive rate in most environments.", "techniques": ["T1055.012", "T1055"], "sigma_path": "rules/windows/process_tampering", "sigma_example": "proc_tampering_win_process_image_tamper.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-25-processtampering-process-image-change"}, {"id": 26, "name": "File Deleted (Logged Only)", "tag": "FileDeleteDetected", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": false, "filterable": true, "description": "Logs file deletion without archiving the deleted file. Lightweight alternative to EID 23 when disk space or performance is a concern.", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "TargetFilename", "Hashes", "IsExecutable", "User"], "forensic_value": "Same detection value as EID 23 (ransomware, wiper, cleanup) without the disk overhead of archiving deleted files. IsExecutable field identifies deleted PE files \u2014 high priority IOC. Use when EID 23 archiving is not feasible.", "noise_level": "Medium", "config_note": "Use instead of EID 23 when archiving is not desired. Same filtering approach applies.", "techniques": ["T1070.004", "T1485", "T1561"], "sigma_path": "rules/windows/file", "sigma_example": "file_delete_win_susp_file_deletion.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-26-filedeletedetected-file-delete-logged"}, {"id": 27, "name": "File Block Executable", "tag": "FileBlockExecutable", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": false, "filterable": true, "description": "Generated when Sysmon detects AND BLOCKS the creation of a PE executable file based on configured rules. This is a prevention event \u2014 Sysmon actively blocked the file write.", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "TargetFilename", "Hashes", "User"], "forensic_value": "Active blocking event \u2014 the malicious executable was prevented from being written. Provides the hash of what was attempted for threat intel lookup, the dropping process, and target path. Requires explicit configuration of FileBlockExecutable rules targeting suspicious paths (temp directories, user profiles).", "noise_level": "Very Low", "config_note": "Must configure block rules explicitly. Scope to high-risk paths only to avoid blocking legitimate installs.", "techniques": ["T1566.001", "T1105", "T1036"], "sigma_path": "rules/windows/file", "sigma_example": "file_block_win_executable.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-27-fileblockexecutable"}, {"id": 28, "name": "File Block Shredding", "tag": "FileBlockShredding", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": false, "filterable": true, "description": "Generated when Sysmon detects and blocks file shredding operations from tools like SDelete. Prevents secure file deletion that attackers use to eliminate forensic evidence.", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "TargetFilename", "Hashes", "IsExecutable", "User"], "forensic_value": "Anti-forensics prevention. Ransomware groups and APTs use secure deletion (SDelete, cipher /w) to prevent file recovery. EID 28 blocks and logs these attempts. The combination of IsExecutable=true and shredding is a critical IOC \u2014 attacker is deleting their tools.", "noise_level": "Very Low", "config_note": "Requires explicit configuration. Will block legitimate SDelete use \u2014 whitelist known admin use cases.", "techniques": ["T1070.004", "T1485"], "sigma_path": "rules/windows/file", "sigma_example": "file_block_win_shredding.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-28-fileblockshredding"}, {"id": 29, "name": "File Executable Detected", "tag": "FileExecutableDetected", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": false, "filterable": true, "description": "Generated when Sysmon detects creation of a new PE executable file. Unlike EID 27, this is detection-only (no blocking). Added in Sysmon 15 (October 2023).", "key_fields": ["UtcTime", "ProcessGuid", "ProcessId", "Image", "TargetFilename", "Hashes", "User"], "forensic_value": "PE file drop detection without blocking \u2014 alert on new executables created in suspicious locations by unexpected processes. Hash field enables immediate threat intel lookup. Complements EID 11 (FileCreate) with PE-specific filtering. Particularly useful for detecting dropper activity without the noise of all file creation events.", "noise_level": "Low", "config_note": "Must be enabled. Configure path filters to focus on high-risk locations. Lower noise than EID 11 since limited to PE files.", "techniques": ["T1566.001", "T1105", "T1036", "T1204.002"], "sigma_path": "rules/windows/file", "sigma_example": "file_event_win_susp_creation_in_temp_folder.yml", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-29-fileexecutabledetected"}, {"id": 255, "name": "Error", "tag": "Error", "channel": "Microsoft-Windows-Sysmon/Operational", "default_enabled": true, "filterable": false, "description": "Generated when an internal Sysmon error occurs \u2014 typically under heavy system load, driver issues, or security/integrity condition violations.", "key_fields": ["UtcTime", "ID", "Description"], "forensic_value": "High-frequency EID 255 errors may indicate an attacker is stressing or patching the Sysmon driver to disable event generation. Also indicates configuration problems or incompatible system conditions. Check Description field for specific error context.", "noise_level": "Very Low", "config_note": "Cannot be filtered. Monitor for patterns \u2014 multiple 255 events in rapid succession are suspicious.", "techniques": ["T1562.001"], "sigma_path": "", "sigma_example": "", "ms_url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-255-error"}];
+var SIGMA_RULES=[{"id": "SYS-001", "title": "LOLBin \u2014 Certutil Download or Decode", "sysmon_eids": [1], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "System Binary Proxy Execution: Certutil", "technique_id": "T1218.013", "description": "Detects abuse of certutil.exe for file download (-urlcache -split -f), base64 decode, or hash verification \u2014 all commonly used for payload delivery.", "key_conditions": "Image ends with certutil.exe; CommandLine contains -urlcache or -decode or -decodehex or -verifyctl, or URL patterns (http/ftp)", "false_positives": "Legitimate IT use of certutil for certificate management. Tune by excluding known-good command patterns.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_certutil_encode.yml", "curated": true}, {"id": "SYS-002", "title": "Suspicious PowerShell Encoded Command Execution", "sysmon_eids": [1], "tactic": "Execution", "tactic_id": "TA0002", "technique": "PowerShell", "technique_id": "T1059.001", "description": "Detects PowerShell execution with encoded commands (-EncodedCommand, -enc, -e) or obfuscated invocation flags, used to hide malicious scripts from command-line logging.", "key_conditions": "Image ends with powershell.exe or pwsh.exe; CommandLine contains -EncodedCommand or -enc or -e followed by base64 string, or hidden window flags (-WindowStyle Hidden, -NonI, -NoP)", "false_positives": "Some legitimate applications and scripts use encoded commands. Tune by allowlisting known-good base64 patterns.", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_powershell_base64_encoded_cmd.yml", "curated": true}, {"id": "SYS-003", "title": "Office Application Spawning Suspicious Child Process", "sysmon_eids": [1], "tactic": "Initial Access", "tactic_id": "TA0001", "technique": "Phishing: Spearphishing Attachment", "technique_id": "T1566.001", "description": "Detects Office applications (Word, Excel, Outlook, PowerPoint) spawning scripting interpreters, command shells, or other suspicious child processes \u2014 a primary macro/exploit delivery indicator.", "key_conditions": "ParentImage ends with WINWORD.EXE/EXCEL.EXE/POWERPNT.EXE/OUTLOOK.EXE; NewProcessName in [cmd.exe, powershell.exe, wscript.exe, cscript.exe, mshta.exe, certutil.exe, regsvr32.exe, wmic.exe, bitsadmin.exe, curl.exe, wget.exe]", "false_positives": "Some legitimate macros spawn cmd/PowerShell for legitimate automation. Context-dependent.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_office_spawn_exe_from_temp.yml", "curated": true}, {"id": "SYS-004", "title": "Mshta Executing Script Content", "sysmon_eids": [1], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "System Binary Proxy Execution: Mshta", "technique_id": "T1218.005", "description": "Detects mshta.exe executing HTA content from remote URLs, inline VBScript/JScript, or suspicious file paths \u2014 a common phishing payload delivery technique.", "key_conditions": "Image ends with mshta.exe; CommandLine contains http:// or https:// or javascript: or vbscript: or .hta from temp/appdata paths", "false_positives": "Legitimate HTA applications \u2014 rare in modern environments.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_mshta.yml", "curated": true}, {"id": "SYS-005", "title": "Regsvr32 Executing Remote Scriptlet (Squiblydoo)", "sysmon_eids": [1], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "System Binary Proxy Execution: Regsvr32", "technique_id": "T1218.010", "description": "Detects the Squiblydoo technique: regsvr32 loading a COM scriptlet from a remote URL or an unusual local path, executing arbitrary code while bypassing AppLocker.", "key_conditions": "Image ends with regsvr32.exe; CommandLine contains /s /u /i: or /s /i: followed by http:// or \\\\UNC path or .sct extension", "false_positives": "Legitimate COM registration \u2014 should not include remote URLs.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_regsvr32_susp_exec.yml", "curated": true}, {"id": "SYS-006", "title": "WMI Spawning Command Shell \u2014 Lateral Movement", "sysmon_eids": [1], "tactic": "Lateral Movement", "tactic_id": "TA0008", "technique": "Windows Management Instrumentation", "technique_id": "T1047", "description": "Detects WMI-based remote execution (wmiexec, Invoke-WmiMethod) producing cmd.exe or powershell.exe as a child of WmiPrvSE.exe.", "key_conditions": "ParentImage ends with WmiPrvSE.exe; NewProcessName in [cmd.exe, powershell.exe, cscript.exe, wscript.exe] with unexpected CommandLine", "false_positives": "Legitimate WMI-based management (SCCM, monitoring agents). Tune by excluding known management system source IPs.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_wmi_spawn_shell.yml", "curated": true}, {"id": "SYS-007", "title": "Renamed Legitimate Binary Execution", "sysmon_eids": [1], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Masquerading: Rename System Utilities", "technique_id": "T1036.003", "description": "Detects execution of legitimate Windows binaries that have been renamed \u2014 a common technique to evade detection rules that match on process name. OriginalFileName differs from Image name.", "key_conditions": "OriginalFileName in [cmd.exe, powershell.exe, cscript.exe, wscript.exe, mshta.exe, regsvr32.exe, rundll32.exe, schtasks.exe, net.exe] but Image name is different", "false_positives": "Very rare legitimate renaming. High confidence detection.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_renamed_binary.yml", "curated": true}, {"id": "SYS-008", "title": "LSASS Dump via Command Line Tools", "sysmon_eids": [1], "tactic": "Credential Access", "tactic_id": "TA0006", "technique": "OS Credential Dumping: LSASS Memory", "technique_id": "T1003.001", "description": "Detects credential dumping tools invoked via command line: procdump targeting lsass, task manager dump, comsvcs.dll MiniDump, or direct LSASS access utilities.", "key_conditions": "CommandLine contains procdump and lsass, or comsvcs.dll and MiniDump and lsass, or ProcDump and -ma, or werfault -s -p [lsass PID]", "false_positives": "Legitimate debugging of LSASS by security tools. Very rare.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_lsass_dump_comsvcs.yml", "curated": true}, {"id": "SYS-009", "title": "Schtasks Creating Persistent Scheduled Task", "sysmon_eids": [1], "tactic": "Persistence", "tactic_id": "TA0003", "technique": "Scheduled Task", "technique_id": "T1053.005", "description": "Detects scheduled task creation via schtasks.exe with suspicious parameters: tasks running from temp/appdata, encoded commands, or at system boot.", "key_conditions": "Image ends with schtasks.exe; CommandLine contains /create and (/sc onstart or /sc onlogon) and (cmd /c or powershell or %TEMP% or %APPDATA%)", "false_positives": "Legitimate scheduled task creation by installers and management tools.", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_schtasks_persistence.yml", "curated": true}, {"id": "SYS-010", "title": "Net.exe Adding User to Administrators Group", "sysmon_eids": [1], "tactic": "Persistence", "tactic_id": "TA0003", "technique": "Create Account: Local Account", "technique_id": "T1136.001", "description": "Detects net.exe or net1.exe adding a user account to the Administrators local group \u2014 a backdoor account creation technique used by ransomware operators.", "key_conditions": "Image ends with net.exe or net1.exe; CommandLine contains localgroup and Administrators and /add", "false_positives": "Legitimate admin operations. Alert and review all occurrences.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_net_user_add.yml", "curated": true}, {"id": "SYS-011", "title": "PsExec Execution \u2014 Local or Remote", "sysmon_eids": [1], "tactic": "Lateral Movement", "tactic_id": "TA0008", "technique": "Remote Services: SMB", "technique_id": "T1021.002", "description": "Detects PsExec execution via OriginalFileName (psexec.exe) regardless of renaming, or the PSEXESVC.exe service being started on the target machine.", "key_conditions": "OriginalFileName=psexec.exe or Image ends with PSEXESVC.exe, or ParentImage is services.exe with PSEXESVC in CommandLine", "false_positives": "Legitimate administrative PsExec use. Alert and review.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_sysinternals_psexec.yml", "curated": true}, {"id": "SYS-012", "title": "Whoami Execution \u2014 Reconnaissance", "sysmon_eids": [1], "tactic": "Discovery", "tactic_id": "TA0007", "technique": "System Owner/User Discovery", "technique_id": "T1033", "description": "Detects execution of whoami.exe, which attackers run immediately after gaining access to confirm their identity and privileges on the compromised host.", "key_conditions": "Image ends with whoami.exe; especially when ParentImage is cmd.exe, powershell.exe, or a suspicious process", "false_positives": "Legitimate admin use. Tune by correlating with other recon activity.", "level": "low", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_whoami.yml", "curated": true}, {"id": "SYS-013", "title": "BloodHound/SharpHound AD Reconnaissance", "sysmon_eids": [1], "tactic": "Discovery", "tactic_id": "TA0007", "technique": "Domain Trust Discovery", "technique_id": "T1482", "description": "Detects SharpHound (BloodHound collector) execution via OriginalFileName, command-line flags, or characteristic output filenames.", "key_conditions": "Image contains SharpHound or OriginalFileName=SharpHound; or CommandLine contains --CollectionMethods or -c All or --outputdirectory and --zipfilename; or file creation of *_computers.json or *_BloodHound.zip", "false_positives": "Authorized red team operations.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_hktl_sharphound.yml", "curated": true}, {"id": "SYS-014", "title": "PowerShell Making Outbound Network Connection", "sysmon_eids": [3], "tactic": "Command and Control", "tactic_id": "TA0011", "technique": "Application Layer Protocol", "technique_id": "T1071.001", "description": "Detects PowerShell or pwsh making outbound network connections, indicating download cradle, C2 callback, or lateral movement activity.", "key_conditions": "Image ends with powershell.exe or pwsh.exe; Initiated=true; DestinationPort in [80,443,8080,8443] or any non-standard port; DestinationIp not in internal ranges", "false_positives": "PowerShell-based management tools, Windows Update via PS, legitimate PS remoting.", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_powershell.yml", "curated": true}, {"id": "SYS-015", "title": "Rundll32 Outbound Network Connection", "sysmon_eids": [3], "tactic": "Command and Control", "tactic_id": "TA0011", "technique": "System Binary Proxy Execution: Rundll32", "technique_id": "T1218.011", "description": "Detects rundll32.exe initiating outbound network connections \u2014 highly suspicious as rundll32 has no legitimate reason to make external connections except in very specific scenarios.", "key_conditions": "Image ends with rundll32.exe; Initiated=true; DestinationPort in [80,443,4444,8080] or any external IP", "false_positives": "Some Windows system operations (Windows Update, WPAD). Tune by excluding known-good destination IPs.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_rundll32.yml", "curated": true}, {"id": "SYS-016", "title": "Ngrok Tunnel Network Connection", "sysmon_eids": [3], "tactic": "Command and Control", "tactic_id": "TA0011", "technique": "Protocol Tunneling", "technique_id": "T1572", "description": "Detects network connections to Ngrok infrastructure (*.ngrok.io, *.ngrok-free.app, tunnel.us.ngrok.com) used to expose internal services or create reverse tunnels for C2.", "key_conditions": "DestinationHostname ends with ngrok.io or ngrok-free.app or contains ngrok; DestinationPort in [443, 4443]", "false_positives": "Legitimate developer use of Ngrok for testing. Rare in enterprise production environments.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_ngrok.yml", "curated": true}, {"id": "SYS-017", "title": "Suspicious Outbound SMTP Connection", "sysmon_eids": [3], "tactic": "Exfiltration", "tactic_id": "TA0010", "technique": "Exfiltration Over Alternative Protocol", "technique_id": "T1048.003", "description": "Detects non-mail-client processes making outbound SMTP connections (port 25/465/587) \u2014 indicates data exfiltration via email or spam sending.", "key_conditions": "DestinationPort in [25,465,587]; Image not in known mail clients [outlook.exe, thunderbird.exe]; Initiated=true", "false_positives": "On-premises mail servers, legitimate mail relay services.", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_susp_smtp.yml", "curated": true}, {"id": "SYS-018", "title": "Mimikatz SSP DLL Load", "sysmon_eids": [7], "tactic": "Credential Access", "tactic_id": "TA0006", "technique": "OS Credential Dumping: LSASS Memory", "technique_id": "T1003.001", "description": "Detects loading of Mimikatz SSP (Security Support Provider) DLLs into LSASS \u2014 mimilib.dll or custom SSP DLLs that log all LSASS authentication events to disk.", "key_conditions": "Image ends with lsass.exe; ImageLoaded contains mimilib.dll or matches unsigned DLL loaded into LSASS from non-system32 path; SignatureStatus not Signed", "false_positives": "Very rare. Legitimate SSP DLLs are always signed Microsoft binaries.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/image_load/image_load_win_mimikatz.yml", "curated": true}, {"id": "SYS-019", "title": "Credential Dumping DLL Loaded by Non-System Process", "sysmon_eids": [7], "tactic": "Credential Access", "tactic_id": "TA0006", "technique": "OS Credential Dumping", "technique_id": "T1003", "description": "Detects credential-related DLLs (wce.dll, wce32.dll, or known dumper DLLs) loaded by unexpected processes.", "key_conditions": "ImageLoaded contains wce.dll, wce32.dll, or matches hash of known credential dumping DLLs; loaded by non-system processes", "false_positives": "Extremely rare legitimate use.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/image_load/image_load_win_susp_dll.yml", "curated": true}, {"id": "SYS-020", "title": "Injection into LSASS via CreateRemoteThread", "sysmon_eids": [8], "tactic": "Credential Access", "tactic_id": "TA0006", "technique": "OS Credential Dumping: LSASS Memory", "technique_id": "T1003.001", "description": "Detects process injection into lsass.exe via CreateRemoteThread \u2014 a primary technique for in-memory credential theft without touching disk.", "key_conditions": "TargetImage ends with lsass.exe; StartModule is null or empty (no backing module \u2014 shellcode injection); SourceImage is not a known security tool", "false_positives": "Some AV/EDR vendors inject into LSASS for monitoring. Build allowlist of known security products.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/create_remote_thread/create_remote_thread_win_lsass.yml", "curated": true}, {"id": "SYS-021", "title": "CreateRemoteThread into Suspicious Target Process", "sysmon_eids": [8], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Process Injection", "technique_id": "T1055", "description": "Detects injection into browser processes, explorer.exe, or other commonly hollowed targets using CreateRemoteThread. StartModule=null indicates shellcode.", "key_conditions": "TargetImage ends with [explorer.exe, svchost.exe, dllhost.exe, chrome.exe, firefox.exe]; StartModule empty or null; SourceImage not in allowlist", "false_positives": "AV/EDR injection for monitoring. Exclude known security product processes.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/create_remote_thread/create_remote_thread_win_susp_target_processes.yml", "curated": true}, {"id": "SYS-022", "title": "LSASS Memory Access with Credential Dump Mask", "sysmon_eids": [10], "tactic": "Credential Access", "tactic_id": "TA0006", "technique": "OS Credential Dumping: LSASS Memory", "technique_id": "T1003.001", "description": "Detects LSASS process access with GrantedAccess masks characteristic of credential dumpers (Mimikatz, Cobalt Strike, CrackMapExec). High-confidence detection.", "key_conditions": "TargetImage ends with lsass.exe; GrantedAccess in [0x1010, 0x1410, 0x1438, 0x143a, 0x1fffff, 0x1f1fff]; SourceImage not in [known AV/EDR processes]", "false_positives": "AV/EDR monitoring of LSASS. Build tight allowlist for your security stack.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_access/proc_access_win_lsass_access.yml", "curated": true}, {"id": "SYS-023", "title": "Credential Manager Access via Process Open", "sysmon_eids": [10], "tactic": "Credential Access", "tactic_id": "TA0006", "technique": "Credentials from Password Stores", "technique_id": "T1555", "description": "Detects unexpected process access to Credential Manager (vaultcli.dll loaded or vault-related process access), used to steal stored Windows credentials.", "key_conditions": "TargetImage ends with explorer.exe or consent.exe; GrantedAccess has PROCESS_VM_READ; CallTrace contains vaultcli.dll or dpapi.dll", "false_positives": "Legitimate credential backup/restore operations.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_access/proc_access_win_credential_access.yml", "curated": true}, {"id": "SYS-024", "title": "Executable Created in Suspicious Location", "sysmon_eids": [11], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Masquerading", "technique_id": "T1036", "description": "Detects PE executables (.exe, .dll, .sys) created in high-risk directories: %TEMP%, %APPDATA%, %PUBLIC%, \\ProgramData, \\Users\\Public \u2014 common malware drop locations.", "key_conditions": "TargetFilename ends with .exe or .dll or .sys; TargetFilename starts with C:\\Windows\\Temp or C:\\Users\\*\\AppData\\Local\\Temp or C:\\Users\\Public or C:\\ProgramData", "false_positives": "Some legitimate installers use temp directories. Tune by excluding known software installers.", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_creation_in_public_folder.yml", "curated": true}, {"id": "SYS-025", "title": "Startup Folder File Created \u2014 Persistence", "sysmon_eids": [11], "tactic": "Persistence", "tactic_id": "TA0003", "technique": "Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder", "technique_id": "T1547.001", "description": "Detects file creation in Windows Startup folders \u2014 a simple persistence mechanism that executes files at user logon.", "key_conditions": "TargetFilename contains \\Start Menu\\Programs\\Startup\\ or \\Microsoft\\Windows\\Start Menu\\Programs\\StartUp\\; created by non-installer process", "false_positives": "Legitimate software using startup folder (OneDrive, Teams, etc.). Tune by excluding known-good application paths.", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_startup_folder_file_write.yml", "curated": true}, {"id": "SYS-026", "title": "Run Key Persistence \u2014 Registry Modification", "sysmon_eids": [12, 13], "tactic": "Persistence", "tactic_id": "TA0003", "technique": "Registry Run Keys / Startup Folder", "technique_id": "T1547.001", "description": "Detects creation or modification of Run/RunOnce registry keys \u2014 the most common persistence mechanism.", "key_conditions": "TargetObject contains \\CurrentVersion\\Run or \\CurrentVersion\\RunOnce; EventType in [CreateValue, SetValue]; Image not in [msiexec.exe, known installers]", "false_positives": "Software installation commonly writes Run keys. Build an allowlist of known-good values.", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_runkey_modification.yml", "curated": true}, {"id": "SYS-027", "title": "WDigest Credential Caching Enabled via Registry", "sysmon_eids": [13], "tactic": "Credential Access", "tactic_id": "TA0006", "technique": "OS Credential Dumping: LSASS Memory", "technique_id": "T1003.001", "description": "Detects enabling of WDigest credential caching (UseLogonCredential=1) which forces cleartext password storage in LSASS memory for Mimikatz harvesting.", "key_conditions": "TargetObject contains WDigest\\UseLogonCredential; Details=1 (DWORD value set to 1); EventType=SetValue", "false_positives": "Extremely rare legitimate use. Alert on all occurrences.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_value_set_wdigest.yml", "curated": true}, {"id": "SYS-028", "title": "IFEO Debugger Persistence or Accessibility Backdoor", "sysmon_eids": [12, 13], "tactic": "Persistence", "tactic_id": "TA0003", "technique": "Image File Execution Options Injection", "technique_id": "T1546.012", "description": "Detects Image File Execution Options Debugger value being set \u2014 used for accessibility backdoors (sethc.exe\u2192cmd.exe) and general process redirect persistence.", "key_conditions": "TargetObject contains Image File Execution Options and Debugger; EventType in [CreateValue, SetValue]; value not pointing to legitimate debugger", "false_positives": "Legitimate debugging configurations by developers.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_image_exe_options.yml", "curated": true}, {"id": "SYS-029", "title": "Windows Defender Real-Time Protection Disabled", "sysmon_eids": [13], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Impair Defenses: Disable or Modify Tools", "technique_id": "T1562.001", "description": "Detects disabling of Windows Defender real-time protection via registry \u2014 a prerequisite step by ransomware and malware before payload execution.", "key_conditions": "TargetObject contains Windows Defender\\Real-Time Protection\\DisableRealtimeMonitoring; Details=1; or DisableAntiSpyware=1; EventType=SetValue", "false_positives": "Security team testing, managed AV replacement workflows.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_value_set_disable_defender.yml", "curated": true}, {"id": "SYS-030", "title": "Suspicious Download via Browser \u2014 MOTW Zone.Identifier", "sysmon_eids": [15], "tactic": "Initial Access", "tactic_id": "TA0001", "technique": "Phishing: Spearphishing Link", "technique_id": "T1566.002", "description": "Detects executable files downloaded via browser with Zone.Identifier ADS, capturing the source URL for phishing investigation. Correlates file hash with threat intel.", "key_conditions": "TargetFilename ends with .exe or .zip or .iso or .lnk; Stream contains Zone.Identifier; Contents includes HostUrl or ReferrerUrl from suspicious domains", "false_positives": "All browser downloads trigger this \u2014 tune by focusing on executable types and suspicious URL patterns.", "level": "low", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_zone_identifier_streams.yml", "curated": true}, {"id": "SYS-031", "title": "Cobalt Strike Default Named Pipe Patterns", "sysmon_eids": [17, 18], "tactic": "Command and Control", "tactic_id": "TA0011", "technique": "Non-Application Layer Protocol", "technique_id": "T1095", "description": "Detects Cobalt Strike C2 beacon characteristic named pipe patterns used for inter-process communication between beacon stages.", "key_conditions": "PipeName matches patterns: \\\\pipe\\\\msagent_*, \\\\pipe\\\\status_*, \\\\pipe\\\\MSSE-*, \\\\pipe\\\\postex_*, \\\\pipe\\\\postex_ssh_*, \\\\pipe\\\\dce_*, \\\\pipe\\\\mojo_*", "false_positives": "Highly characteristic \u2014 very low false positive rate for Cobalt Strike default configurations.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/pipe_created/pipe_created_win_susp_cobaltstrike_pipe_patterns.yml", "curated": true}, {"id": "SYS-032", "title": "PsExec Network Pipe Communication", "sysmon_eids": [17, 18], "tactic": "Lateral Movement", "tactic_id": "TA0008", "technique": "Remote Services: SMB/Windows Admin Shares", "technique_id": "T1021.002", "description": "Detects PsExec communication pipes created by the PSEXESVC service on the target machine during remote execution.", "key_conditions": "PipeName matches \\\\PSEXESVC* or \\\\PAExec* or \\\\RemCom*; Image ends with PSEXESVC.exe or services.exe", "false_positives": "Legitimate PsExec use by administrators.", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/pipe_created/pipe_created_win_psexec.yml", "curated": true}, {"id": "SYS-033", "title": "WMI Event Subscription \u2014 Fileless Persistence", "sysmon_eids": [19, 20, 21], "tactic": "Persistence", "tactic_id": "TA0003", "technique": "Event Triggered Execution: WMI Event Subscription", "technique_id": "T1546.003", "description": "Detects WMI event subscription creation (filter + consumer + binding) used for fileless persistence that survives reboots without touching the filesystem.", "key_conditions": "EID 19: Filter with suspicious trigger (SELECT * FROM Win32_LogonSession, __InstanceCreationEvent); EID 20: CommandLineEventConsumer or ActiveScriptEventConsumer with malicious payload in Destination; EID 21: binding activating the subscription", "false_positives": "Legitimate WMI subscriptions by management software (SCCM). Build an allowlist.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/wmi_event/wmi_event_susp_wmi_filter.yml", "curated": true}, {"id": "SYS-034", "title": "LOLBin Making Suspicious DNS Query", "sysmon_eids": [22], "tactic": "Command and Control", "tactic_id": "TA0011", "technique": "Application Layer Protocol: DNS", "technique_id": "T1071.004", "description": "Detects living-off-the-land binaries (certutil, regsvr32, mshta, rundll32, powershell) making DNS queries to external domains \u2014 C2 communication or download cradle.", "key_conditions": "Image in [certutil.exe, regsvr32.exe, mshta.exe, rundll32.exe, powershell.exe]; QueryName not in internal DNS zones; QueryStatus=0 (success)", "false_positives": "Windows Update checking may use PowerShell DNS. Tune by allowlisting known Windows Update domains.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/dns_query/dns_query_win_susp_lolbin.yml", "curated": true}, {"id": "SYS-035", "title": "DGA Domain Query \u2014 High-Entropy Domain Name", "sysmon_eids": [22], "tactic": "Command and Control", "tactic_id": "TA0011", "technique": "Dynamic Resolution: Domain Generation Algorithms", "technique_id": "T1568.002", "description": "Detects DNS queries to high-entropy domain names characteristic of Domain Generation Algorithm (DGA) C2 \u2014 random-looking subdomains that are hard to blocklist.", "key_conditions": "QueryName has high character entropy (Shannon entropy > 3.5) or matches DGA patterns (long random subdomain, many numeric chars); multiple rapid queries to different high-entropy domains", "false_positives": "Some CDN domains have high entropy. Tune with legitimate CDN/cloud domain allowlist.", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/dns_query/dns_query_win_susp_dga.yml", "curated": true}, {"id": "SYS-036", "title": "Vulnerable Driver Loaded (LOLDrivers / BYOVD)", "sysmon_eids": [6], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Exploit Public-Facing Application / Kernel Driver", "technique_id": "T1014", "description": "Detects loading of known vulnerable or malicious drivers used in Bring Your Own Vulnerable Driver (BYOVD) attacks to disable security tools or gain ring-0 access.", "key_conditions": "ImageLoaded hash matches known vulnerable driver hashes from loldrivers.io; or Signed=false; or SignatureStatus=revoked; or driver loaded from suspicious path", "false_positives": "Legitimate but outdated signed drivers \u2014 validate against loldrivers.io blocklist.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/driver_load/driver_load_win_vuln_drivers.yml", "curated": true}, {"id": "SYS-037", "title": "Unsigned or Revoked Driver Loaded", "sysmon_eids": [6], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Rootkit", "technique_id": "T1014", "description": "Detects loading of unsigned or revoked-signature kernel drivers \u2014 rootkits and malicious drivers are either unsigned or use stolen/revoked certificates.", "key_conditions": "Signed=false or SignatureStatus=revoked or SignatureStatus=errorCode_endpoint; driver not in known-good driver allowlist", "false_positives": "Older legitimate drivers may lack signatures. Build allowlist of known-good unsigned drivers.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/driver_load/driver_load_win_unsigned_driver.yml", "curated": true}, {"id": "SYS-038", "title": "Process Hollowing or Herpaderping Detected", "sysmon_eids": [25], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Process Injection: Process Hollowing", "technique_id": "T1055.012", "description": "Detects process image manipulation: hollowing (replacing legitimate process memory with malicious code) or herpaderping (modifying file after process creation). Sysmon natively detects both.", "key_conditions": "EventID=25; Type in ['Image is replaced','Image is locked for access']; any process \u2014 near-zero legitimate rate", "false_positives": "Extremely rare. Some older software protection schemes may trigger herpaderping detection.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_tampering/proc_tampering_win_process_image_tamper.yml", "curated": true}, {"id": "SYS-039", "title": "Raw Volume Read \u2014 Credential File Access", "sysmon_eids": [9], "tactic": "Credential Access", "tactic_id": "TA0006", "technique": "OS Credential Dumping: NTDS", "technique_id": "T1003.003", "description": "Detects raw disk volume reads by non-backup processes \u2014 used to access locked credential files (NTDS.dit, SAM hive, SECURITY hive) without triggering file system auditing.", "key_conditions": "Device contains PhysicalDrive or HarddiskVolume; Image not in [known backup tools]; Image not System", "false_positives": "Backup software, disk analysis tools. Build tight allowlist.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/raw_access_thread/rawaccess_win_rawaccess_volume_read.yml", "curated": true}, {"id": "SYS-040", "title": "Sysmon Service Stopped or Config Modified", "sysmon_eids": [4, 16], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Impair Defenses: Disable or Modify Tools", "technique_id": "T1562.001", "description": "Detects Sysmon service being stopped (EID 4, State=Stopped) or configuration modified unexpectedly (EID 16). Attackers stop or reconfigure Sysmon to blind monitoring.", "key_conditions": "EID 4 with State=Stopped (outside of scheduled maintenance windows); or EID 16 during unexpected time periods or by unexpected accounts", "false_positives": "Planned Sysmon maintenance, configuration updates by security team. Suppress during known change windows.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/other/win_sysmon_driver_unload.yml", "curated": true}, {"id": "SYS-041", "title": "Cloudflared Tunnel \u2014 C2 or Data Exfiltration via Cloudflare", "sysmon_eids": [1], "tactic": "Command and Control", "tactic_id": "TA0011", "technique": "Protocol Tunneling", "technique_id": "T1572", "description": "Detects execution of Cloudflared, the Cloudflare tunnel client, which attackers use to expose internal services or create persistent reverse tunnels. Observed in multiple ransomware intrusions (LockBit, Play) as an alternative to Ngrok.", "key_conditions": "Image ends with cloudflared.exe or OriginalFileName=cloudflared.exe; CommandLine contains tunnel or --url or access", "false_positives": "Legitimate Cloudflare Tunnel deployments in organizations using Cloudflare Zero Trust.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_cloudflared_tunnel_run.yml", "curated": true}, {"id": "SYS-042", "title": "Impacket Lateral Movement Tool Execution", "sysmon_eids": [1], "tactic": "Lateral Movement", "tactic_id": "TA0008", "technique": "Remote Services", "technique_id": "T1021", "description": "Detects execution of compiled Impacket tools (wmiexec, smbexec, atexec, dcomexec, secretsdump) by filename pattern or characteristic command-line arguments. The /Q /c echo pattern is signature Impacket wmiexec output redirection.", "key_conditions": "Image name contains impacket or wmiexec or smbexec or atexec or dcomexec; or CommandLine contains /Q /c echo and \\\\127.0.0.1\\ or C$\\\\__output; or ParentImage=wmiprvse.exe with cmd.exe child and echo redirect", "false_positives": "Authorized red team operations. The /Q /c echo pattern is highly characteristic.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_hktl_impacket_lateral_movement.yml", "curated": true}, {"id": "SYS-043", "title": "AdFind Active Directory Reconnaissance", "sysmon_eids": [1], "tactic": "Discovery", "tactic_id": "TA0007", "technique": "Domain Trust Discovery", "technique_id": "T1482", "description": "Detects AdFind execution \u2014 a single-binary AD query tool that is a signature tool in Conti, LockBit, and Ryuk pre-ransomware reconnaissance. Detected by filename, OriginalFileName, or characteristic command-line flags.", "key_conditions": "Image ends with adfind.exe or AdFind.exe; or CommandLine contains -f objectcategory or -sc dclist or -subt or -csv; or OriginalFileName=adfind.exe", "false_positives": "Authorized AD administrators using AdFind for legitimate queries.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_hktl_adfind_susp_usage.yml", "curated": true}, {"id": "SYS-044", "title": "SDelete Secure File Deletion \u2014 Anti-Forensics", "sysmon_eids": [1], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Indicator Removal: File Deletion", "technique_id": "T1070.004", "description": "Detects SDelete (Sysinternals) execution used by attackers to securely delete files and prevent recovery. Ransomware groups use SDelete post-encryption to destroy backups and forensic evidence.", "key_conditions": "Image ends with sdelete.exe or sdelete64.exe; or OriginalFileName=sdelete.exe; CommandLine contains -p (overwrite passes) or -s (recursive) or *.* targeting directories", "false_positives": "Legitimate secure file deletion by administrators (should be rare and documented).", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_sysinternals_sdelete.yml", "curated": true}, {"id": "SYS-045", "title": "WMIC Remote Process Creation \u2014 Lateral Movement", "sysmon_eids": [1], "tactic": "Lateral Movement", "tactic_id": "TA0008", "technique": "Windows Management Instrumentation", "technique_id": "T1047", "description": "Detects WMIC used for remote process creation \u2014 a classic lateral movement technique. CommandLine includes node: (remote target), process call create, and a payload command.", "key_conditions": "Image ends with wmic.exe; CommandLine contains /node: and process and call and create; or CommandLine contains process call create with suspicious payload (powershell, cmd, cscript)", "false_positives": "Legitimate WMIC-based remote management by IT operations.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_wmic_remote_command.yml", "curated": true}, {"id": "SYS-046", "title": "Network Reconnaissance via Built-in Tools", "sysmon_eids": [1], "tactic": "Discovery", "tactic_id": "TA0007", "technique": "Network Service Discovery", "technique_id": "T1046", "description": "Detects rapid sequential execution of native Windows network reconnaissance tools (net.exe, netstat, ipconfig, arp, nslookup, ping) \u2014 a pattern consistent with post-exploitation situational awareness.", "key_conditions": "Image in [net.exe, net1.exe, netstat.exe, ipconfig.exe, arp.exe, nslookup.exe, ping.exe, tracert.exe, route.exe]; multiple distinct executions within short time window from same parent process", "false_positives": "Legitimate admin network troubleshooting. Alert on burst patterns (5+ tools in <60 seconds).", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_net_network_recon.yml", "curated": true}, {"id": "SYS-047", "title": "Shadow Copy Deletion \u2014 Ransomware Preparation", "sysmon_eids": [1], "tactic": "Impact", "tactic_id": "TA0040", "technique": "Inhibit System Recovery", "technique_id": "T1490", "description": "Detects Volume Shadow Copy deletion via vssadmin, wmic, or PowerShell \u2014 the single most reliable pre-ransomware indicator. Nearly every ransomware family deletes VSS copies before encryption.", "key_conditions": "Image ends with vssadmin.exe with CommandLine contains delete shadows; or wmic.exe with shadowcopy and delete; or powershell.exe with Get-WmiObject Win32_ShadowCopy and .Delete(); or bcdedit with recoveryenabled no or ignoreallfailures", "false_positives": "Legitimate backup rotation scripts. In most enterprise environments VSS deletion should require change control.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_vssadmin_delete_shadows.yml", "curated": true}, {"id": "SYS-048", "title": "Chisel Reverse Proxy Tunnel Execution", "sysmon_eids": [1], "tactic": "Command and Control", "tactic_id": "TA0011", "technique": "Protocol Tunneling", "technique_id": "T1572", "description": "Detects Chisel TCP/UDP tunnel execution. Chisel is a Go binary used by attackers for port forwarding and SOCKS proxy chains through firewalls. Often renamed but Go binary signatures are detectable.", "key_conditions": "Image name contains chisel; or CommandLine contains client and R:socks or R:0.0.0.0 or server --port; or OriginalFileName=chisel (Go binary metadata)", "false_positives": "Legitimate network tunneling for development environments. Rare in enterprise production.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_hktl_chisel_execution.yml", "curated": true}, {"id": "SYS-049", "title": "Procdump LSASS Memory Dump", "sysmon_eids": [1], "tactic": "Credential Access", "tactic_id": "TA0006", "technique": "OS Credential Dumping: LSASS Memory", "technique_id": "T1003.001", "description": "Detects ProcDump (Sysinternals) targeting LSASS process for memory dumping \u2014 a common credential theft technique that abuses a legitimate signed tool to evade AV.", "key_conditions": "Image ends with procdump.exe or procdump64.exe; CommandLine contains lsass; or CommandLine contains -ma and (lsass or process ID of lsass); or OriginalFileName=procdump", "false_positives": "Legitimate debugging of LSASS by support engineers \u2014 extremely rare and should be via ticket.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_sysinternals_procdump_lsass.yml", "curated": true}, {"id": "SYS-050", "title": "Suspicious Execution from Recycle Bin or Temp", "sysmon_eids": [1], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Masquerading", "technique_id": "T1036", "description": "Detects process execution from highly suspicious locations: Recycle Bin ($Recycle.Bin), Windows Temp, system32 temp, or user temp directories. Malware frequently executes from these paths to evade detection.", "key_conditions": "Image contains $Recycle.Bin or \\Recycler\\ or C:\\Windows\\Temp\\ or \\AppData\\Local\\Temp\\ and file extension is .exe or .dll; CommandLine or Image path indicates temp-based execution", "false_positives": "Some legitimate installers extract to and execute from temp. Tune by excluding known software updaters.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_execution_path.yml", "curated": true}, {"id": "SYS-051", "title": "Lateral Movement via Copy to Admin Share + Execution", "sysmon_eids": [1], "tactic": "Lateral Movement", "tactic_id": "TA0008", "technique": "SMB/Windows Admin Shares", "technique_id": "T1021.002", "description": "Detects the classic lateral movement pattern: copying an executable to a remote admin share followed by remote execution via sc.exe, psexec, or AT command \u2014 characteristic of ransomware operators and red teams.", "key_conditions": "CommandLine contains copy and \\\\<target>\\C$ or \\\\<target>\\ADMIN$; or cmd.exe with copy and net use pattern; followed by sc.exe or schtasks creating remote task", "false_positives": "Legitimate software deployment via admin shares (SCCM, PDQ Deploy).", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_copy_lateral_movement.yml", "curated": true}, {"id": "SYS-052", "title": "PowerShell Disable Defender via Set-MpPreference", "sysmon_eids": [1], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Impair Defenses: Disable or Modify Tools", "technique_id": "T1562.001", "description": "Detects PowerShell commands disabling Windows Defender features via Set-MpPreference \u2014 used by ransomware and malware to disable real-time protection before payload execution.", "key_conditions": "Image ends with powershell.exe or pwsh.exe; CommandLine contains Set-MpPreference and (DisableRealtimeMonitoring or DisableIOAVProtection or DisableBehaviorMonitoring or ExclusionPath or ExclusionProcess) with $true or 1", "false_positives": "Security team testing, managed AV replacement procedures.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_powershell_defender_disable_feature.yml", "curated": true}, {"id": "SYS-053", "title": "Rclone Cloud Sync \u2014 Potential Data Exfiltration", "sysmon_eids": [1], "tactic": "Exfiltration", "tactic_id": "TA0010", "technique": "Exfiltration to Cloud Storage", "technique_id": "T1567.002", "description": "Detects Rclone execution used for exfiltrating data to cloud storage (MEGA, Dropbox, S3, Google Drive). Heavily used by ransomware operators (Scattered Spider, ALPHV, Cl0p) for large-volume exfiltration.", "key_conditions": "Image ends with rclone.exe or OriginalFileName=rclone.exe; CommandLine contains copy or sync or move with remote: pattern; or CommandLine contains --config and cloud provider flags (mega, s3, gdrive)", "false_positives": "Legitimate IT use of Rclone for cloud backup. Alert on non-standard config files and unusual destination remotes.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_rclone_execution.yml", "curated": true}, {"id": "SYS-054", "title": "Suspicious High-Risk Port Outbound \u2014 C2 Beaconing", "sysmon_eids": [3], "tactic": "Command and Control", "tactic_id": "TA0011", "technique": "Non-Standard Port", "technique_id": "T1571", "description": "Detects processes making outbound connections on non-standard high-risk ports commonly used by C2 frameworks: 4444 (Metasploit default), 4445, 1337, 8888, 9999, 6666, 50050 (Cobalt Strike teamserver).", "key_conditions": "Initiated=true; DestinationPort in [4444,4445,1337,8888,9999,6666,6667,50050,55553]; Image not in known-good processes making these connections", "false_positives": "Development environments using these ports. Tune by IP range \u2014 alert specifically on external IPs.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_susp_ports.yml", "curated": true}, {"id": "SYS-055", "title": "Non-Browser Process Connecting to File Sharing Service", "sysmon_eids": [3], "tactic": "Exfiltration", "tactic_id": "TA0010", "technique": "Exfiltration to Cloud Storage", "technique_id": "T1567.002", "description": "Detects non-browser processes making connections to file sharing and cloud storage services (MEGA, WeTransfer, Dropbox, Google Drive, paste sites) that may indicate data exfiltration.", "key_conditions": "Initiated=true; DestinationHostname ends with mega.nz or mega.io or wetransfer.com or paste.ee or pastebin.com or file.io or transfer.sh; Image not in [chrome.exe, firefox.exe, msedge.exe, brave.exe]", "false_positives": "Enterprise sync clients. Tune by including expected sync tool processes in allowlist.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_susp_file_sharing_domains.yml", "curated": true}, {"id": "SYS-056", "title": "Cobalt Strike Default Network Indicators", "sysmon_eids": [3], "tactic": "Command and Control", "tactic_id": "TA0011", "technique": "Web Protocols", "technique_id": "T1071.001", "description": "Detects Cobalt Strike C2 network characteristics: connections on port 443/80 from unusual processes with beacon-like jitter intervals, or connections to known Cobalt Strike team server certificates.", "key_conditions": "Image in [svchost.exe, rundll32.exe, dllhost.exe, regsvr32.exe, mshta.exe]; Initiated=true; DestinationPort in [80,443,8080,8443]; DestinationHostname not in known CDN/update domains", "false_positives": "Windows system processes occasionally make legitimate HTTP connections. Build tight allowlist of expected destinations.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_susp_outbound_connection.yml", "curated": true}, {"id": "SYS-057", "title": "DNS-over-HTTPS by Non-Browser \u2014 C2 Evasion", "sysmon_eids": [3], "tactic": "Command and Control", "tactic_id": "TA0011", "technique": "Application Layer Protocol: DNS", "technique_id": "T1071.004", "description": "Detects non-browser processes connecting to known DNS-over-HTTPS (DoH) providers (Cloudflare 1.1.1.1, Google 8.8.8.8, Quad9) on port 443 \u2014 used by malware to bypass DNS monitoring and resolve C2 domains without hitting corporate DNS.", "key_conditions": "Initiated=true; DestinationIp in [1.1.1.1, 1.0.0.1, 8.8.8.8, 8.8.4.4, 9.9.9.9, 149.112.112.112, 94.140.14.14]; DestinationPort=443; Image not in [chrome.exe, firefox.exe, msedge.exe, brave.exe]", "false_positives": "Some applications with built-in DoH support. Tune by process allowlist.", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_dns_over_https.yml", "curated": true}, {"id": "SYS-058", "title": "Suspicious DLL Loaded from AppData or Temp", "sysmon_eids": [7], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "DLL Side-Loading", "technique_id": "T1574.002", "description": "Detects DLL loading from user-writable high-risk paths (AppData, Temp, Downloads, Public) into processes \u2014 indicative of DLL hijacking or side-loading to execute malicious code.", "key_conditions": "ImageLoaded starts with C:\\Users\\ and contains \\AppData\\ or \\Temp\\ or \\Downloads\\; or starts with C:\\ProgramData\\; file extension is .dll; Signed=false or from unexpected process", "false_positives": "Some legitimate applications install DLLs in AppData. Build hash-based allowlist for known-good DLLs.", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/image_load/image_load_win_susp_dll_load.yml", "curated": true}, {"id": "SYS-059", "title": "DLL Loaded by Signed Binary with Unsigned DLL \u2014 Hijack", "sysmon_eids": [7], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Hijack Execution Flow: DLL Search Order", "technique_id": "T1574.001", "description": "Detects when a trusted signed Windows binary loads an unsigned DLL from a non-standard path \u2014 the signature of DLL search-order hijacking where malicious DLLs are placed alongside legitimate executables.", "key_conditions": "Image is a signed Microsoft/system binary; ImageLoaded path is NOT in C:\\Windows\\System32\\ or C:\\Windows\\SysWOW64\\; Signed=false or SignatureStatus != Valid", "false_positives": "Some legitimate third-party software bundles unsigned DLLs with signed executables. Build path+process allowlist.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/image_load/image_load_win_dll_sideloading.yml", "curated": true}, {"id": "SYS-060", "title": "PowerShell Reflection \u2014 In-Memory Assembly Load", "sysmon_eids": [7], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Reflective Code Loading", "technique_id": "T1620", "description": "Detects PowerShell loading .NET assemblies reflectively (Invoke-ReflectivePEInjection, [System.Reflection.Assembly]::Load) \u2014 used to execute Mimikatz, Rubeus, and other tools entirely in memory without touching disk.", "key_conditions": "Image ends with powershell.exe or pwsh.exe; ImageLoaded path starts with C:\\Windows\\assembly\\NativeImages or appears as a memory-backed module with no disk path", "false_positives": "Legitimate PowerShell modules loaded in-process. Focus on unsigned in-memory assemblies.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/image_load/image_load_win_powershell_susp_assembly.yml", "curated": true}, {"id": "SYS-061", "title": "Suspicious Parent-Child Injection via CreateRemoteThread", "sysmon_eids": [8], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Process Injection", "technique_id": "T1055", "description": "Detects injection from scripting engines (wscript, cscript, mshta, powershell) into system processes (svchost, taskhost, explorer) via CreateRemoteThread \u2014 characteristic of script-based malware pivoting to a persistent process.", "key_conditions": "SourceImage ends with [wscript.exe, cscript.exe, mshta.exe, powershell.exe, cmd.exe]; TargetImage ends with [svchost.exe, taskhost.exe, explorer.exe, dllhost.exe]; StartModule empty", "false_positives": "Rare. Some monitoring tools may inject via scripts into system processes.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/create_remote_thread/create_remote_thread_win_susp_source_image.yml", "curated": true}, {"id": "SYS-062", "title": "Token Impersonation via Process Open \u2014 Privilege Escalation", "sysmon_eids": [10], "tactic": "Privilege Escalation", "tactic_id": "TA0004", "technique": "Access Token Manipulation", "technique_id": "T1134.001", "description": "Detects process access with PROCESS_DUP_HANDLE (0x40) or PROCESS_QUERY_INFORMATION access rights targeting high-privilege processes \u2014 used for token impersonation/theft to escalate privileges.", "key_conditions": "GrantedAccess contains 0x40 (PROCESS_DUP_HANDLE) or 0x400 (PROCESS_QUERY_INFORMATION); TargetImage in [lsass.exe, winlogon.exe, services.exe]; SourceImage is unexpected non-system process", "false_positives": "Security tools and debuggers legitimately query process information. Build allowlist.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_access/proc_access_win_susp_proc_access.yml", "curated": true}, {"id": "SYS-063", "title": "LNK File Created in Suspicious Location", "sysmon_eids": [11], "tactic": "Persistence", "tactic_id": "TA0003", "technique": "Shortcut Modification", "technique_id": "T1547.009", "description": "Detects LNK (shortcut) file creation in startup folders, desktop, or suspicious temp locations \u2014 used for persistence or as a delivery mechanism (ISO-based phishing drops LNK that executes payload).", "key_conditions": "TargetFilename ends with .lnk; location is Startup folder or Desktop or \\Temp\\ or \\AppData\\; created by unexpected process (not Windows Explorer, known apps)", "false_positives": "Application installation creating legitimate shortcuts. Focus on temp-path LNK creation.", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_lnk_creation.yml", "curated": true}, {"id": "SYS-064", "title": "Office Application Writing Executable to Disk", "sysmon_eids": [11], "tactic": "Initial Access", "tactic_id": "TA0001", "technique": "Phishing: Spearphishing Attachment", "technique_id": "T1566.001", "description": "Detects Office applications (Word, Excel, PowerPoint, Outlook) writing PE executables (.exe, .dll) to disk \u2014 a clear indicator of macro-based malware dropper activity.", "key_conditions": "Image ends with WINWORD.EXE or EXCEL.EXE or POWERPNT.EXE or OUTLOOK.EXE; TargetFilename ends with .exe or .dll or .sys or .ps1 or .vbs or .js; TargetFilename NOT in known legitimate Office plugin paths", "false_positives": "Office add-ins that install components \u2014 very rare and should be allowlisted.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_office_macro_file_drop.yml", "curated": true}, {"id": "SYS-065", "title": "Script File Written to Windows Directory", "sysmon_eids": [11], "tactic": "Persistence", "tactic_id": "TA0003", "technique": "Boot or Logon Autostart Execution", "technique_id": "T1547", "description": "Detects script files (PowerShell, batch, VBScript, JScript) being written directly into C:\\Windows\\ or C:\\Windows\\System32\\ \u2014 attackers place scripts here to abuse the trusted path and avoid detection.", "key_conditions": "TargetFilename starts with C:\\Windows\\ and ends with .ps1 or .bat or .cmd or .vbs or .js or .hta; Image not in [msiexec.exe, TrustedInstaller.exe, System]", "false_positives": "Windows updates occasionally place scripts here. Tune by excluding TrustedInstaller and SYSTEM write operations.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_script_file_creation_windows_dir.yml", "curated": true}, {"id": "SYS-066", "title": "Windows Defender Exclusion Path Added", "sysmon_eids": [12, 13], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Impair Defenses: Disable or Modify Tools", "technique_id": "T1562.001", "description": "Detects addition of exclusion paths or processes to Windows Defender via registry \u2014 attackers add the directory containing their tools to Defender exclusions before dropping payloads.", "key_conditions": "TargetObject contains Windows Defender\\Exclusions\\Paths or Exclusions\\Processes or Exclusions\\Extensions; EventType in [CreateValue, SetValue]; Image not in [MsMpEng.exe, known AV management tools]", "false_positives": "Legitimate AV exclusions configured by security team or via GPO. Alert on process context.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_windows_defender_exclusions.yml", "curated": true}, {"id": "SYS-067", "title": "UAC Disabled via Registry \u2014 EnableLUA=0", "sysmon_eids": [13], "tactic": "Privilege Escalation", "tactic_id": "TA0004", "technique": "Bypass User Account Control", "technique_id": "T1548.002", "description": "Detects disabling of User Account Control (UAC) by setting EnableLUA=0 in registry \u2014 removes the primary elevation control mechanism, allowing silent privilege escalation.", "key_conditions": "TargetObject contains Policies\\System\\EnableLUA; Details=0 (DWORD); EventType=SetValue", "false_positives": "Misconfigured enterprise deployments. Alert on all occurrences \u2014 EnableLUA should always be 1.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_uac_disabled.yml", "curated": true}, {"id": "SYS-068", "title": "Suspicious AutoRun Registry Key in Uncommon Path", "sysmon_eids": [12, 13], "tactic": "Persistence", "tactic_id": "TA0003", "technique": "Boot or Logon Autostart Execution", "technique_id": "T1547.001", "description": "Detects autostart registry value pointing to executables in unusual locations (temp, appdata, programdata, recycle bin) rather than Program Files \u2014 a key persistence IOC.", "key_conditions": "TargetObject contains \\CurrentVersion\\Run; Details (value data) contains \\Temp\\ or \\AppData\\ or \\ProgramData\\ or $Recycle or \\Users\\Public; EventType=SetValue", "false_positives": "Some legitimate applications install Run entries pointing to AppData (OneDrive, Dropbox). Tune by value name.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_runkey_susp_path.yml", "curated": true}, {"id": "SYS-069", "title": "Service Registry Key Modified \u2014 Potential Hijack", "sysmon_eids": [12, 13], "tactic": "Persistence", "tactic_id": "TA0003", "technique": "Create or Modify System Process: Windows Service", "technique_id": "T1543.003", "description": "Detects modification of a Windows service's ImagePath registry value \u2014 used to hijack existing legitimate services by redirecting to malicious binaries, or to plant new malicious services.", "key_conditions": "TargetObject contains HKLM\\System\\CurrentControlSet\\Services\\ and ImagePath; EventType=SetValue; new ImagePath value points to unusual directory or contains powershell/cmd embedded commands; Image not msiexec.exe or sc.exe", "false_positives": "Legitimate service installation and update. Alert on ImagePath values pointing outside Program Files or Windows.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_service_imagepath_change.yml", "curated": true}, {"id": "SYS-070", "title": "File Timestamp Modified \u2014 Timestomping", "sysmon_eids": [2], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Indicator Removal: Timestomp", "technique_id": "T1070.006", "description": "Detects file creation time modification (timestomping) \u2014 attackers change file timestamps to match system files or predate the intrusion to confuse forensic timeline analysis.", "key_conditions": "EventID=2; Image not in [known legitimate timestamping tools: robocopy.exe, xcopy.exe, backup software]; PreviousCreationUtcTime differs significantly from CreationUtcTime (e.g., changed to pre-2010 or future date)", "false_positives": "File sync and backup tools legitimately modify timestamps. Focus on PE files and executables modified by unexpected processes.", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_creation_time_change.yml", "curated": true}, {"id": "SYS-071", "title": "Malware Backdating Timestamp to System File Era", "sysmon_eids": [2], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Indicator Removal: Timestomp", "technique_id": "T1070.006", "description": "Detects timestomping where an attacker sets a file's creation time to match a known Windows OS release date \u2014 a specific APT technique to make backdoors appear to be original system files.", "key_conditions": "EventID=2; CreationUtcTime matches Windows OS release dates (e.g., 2009-07-14 for Win7, 2012-07-26 for Win8, 2015-07-29 for Win10) within a short date range; TargetFilename ends with .exe or .dll", "false_positives": "Extremely rare legitimate use case.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_os_timestamp.yml", "curated": true}, {"id": "SYS-072", "title": "ISO or IMG File Download \u2014 MOTW Bypass Container", "sysmon_eids": [15], "tactic": "Initial Access", "tactic_id": "TA0001", "technique": "Phishing: Spearphishing Attachment", "technique_id": "T1566.001", "description": "Detects download of ISO or IMG disk image files which attackers use to deliver payloads while bypassing Mark of the Web propagation (files inside ISO do not inherit Zone.Identifier from the container).", "key_conditions": "TargetFilename ends with .iso or .img or .vhd or .vhdx; Stream=Zone.Identifier with ZoneId=3 (Internet); Image is browser or mail client", "false_positives": "Legitimate ISO downloads for software installation. Alert on combined with suspicious URL patterns.", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_iso_file_download.yml", "curated": true}, {"id": "SYS-073", "title": "Suspicious File Downloaded from Paste or File Sharing Site", "sysmon_eids": [15], "tactic": "Initial Access", "tactic_id": "TA0001", "technique": "Phishing: Spearphishing Link", "technique_id": "T1566.002", "description": "Detects executable or script files downloaded from paste/file sharing sites (pastebin, paste.ee, file.io, transfer.sh, raw.githubusercontent abused) \u2014 common payload delivery infrastructure.", "key_conditions": "TargetFilename ends with .exe or .ps1 or .bat or .hta or .vbs or .js; Zone.Identifier Contents/HostUrl contains pastebin.com or paste.ee or file.io or transfer.sh or hastebin.com", "false_positives": "Developers downloading legitimate scripts from GitHub gists or pastebin. Tune by executable file type focus.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_download_via_browser.yml", "curated": true}, {"id": "SYS-074", "title": "Sliver or Brute Ratel C2 DNS Beacon Patterns", "sysmon_eids": [22], "tactic": "Command and Control", "tactic_id": "TA0011", "technique": "Domain Generation Algorithms", "technique_id": "T1568.002", "description": "Detects DNS query patterns characteristic of Sliver C2 (random-looking subdomains, mTLS certificates) and Brute Ratel (characteristic DNS patterns). These frameworks generate DNS queries with high entropy subdomains.", "key_conditions": "QueryName has high entropy subdomains (>3.5 Shannon entropy); or QueryName structure matches known Sliver patterns (random 8-12 char subdomain under attacker domain); rapid sequential queries to same base domain", "false_positives": "Some CDNs generate high-entropy subdomains. Correlate with process and network context.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/dns_query/dns_query_win_susp_dga.yml", "curated": true}, {"id": "SYS-075", "title": "Suspicious DNS Query to Newly Registered or Typosquatted Domain", "sysmon_eids": [22], "tactic": "Command and Control", "tactic_id": "TA0011", "technique": "Domain Fronting", "technique_id": "T1090.004", "description": "Detects DNS queries to domains matching known typosquatting patterns (microsoft-update.com, windowsupdate.net, etc.) or queries from processes that should never make external DNS queries.", "key_conditions": "QueryName matches typosquatting patterns for common enterprise domains; or QueryName resolves to recently registered domain (TTI integration needed); Image in [wmic.exe, regsvr32.exe, rundll32.exe, mshta.exe]", "false_positives": "Low \u2014 process-specific filtering keeps FP rate manageable.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/dns_query/dns_query_win_susp_malware_domains.yml", "curated": true}, {"id": "SYS-076", "title": "Ransomware Mass File Deletion Pattern", "sysmon_eids": [23, 26], "tactic": "Impact", "tactic_id": "TA0040", "technique": "Data Destruction", "technique_id": "T1485", "description": "Detects high-volume file deletion events characteristic of ransomware wiping original files post-encryption or a wiper malware destroying data. Alert on >100 file deletions per minute from a single process.", "key_conditions": "EID 23 or 26; high volume of events from single ProcessGuid within short time window; TargetFilename extensions are common document types (.docx, .xlsx, .pdf, .jpg) being deleted in bulk", "false_positives": "Legitimate bulk file cleanup operations. Alert on rate threshold combined with diverse file type coverage.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_delete_win_delete_shadow_volume.yml", "curated": true}, {"id": "SYS-077", "title": "Tool Cleanup \u2014 Attacker Deleting Own Executables", "sysmon_eids": [23, 26], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Indicator Removal: File Deletion", "technique_id": "T1070.004", "description": "Detects attackers deleting their own tools after use \u2014 IsExecutable=true in file deletion events from temp/appdata, combined with the deleting process being cmd.exe or PowerShell, is a strong post-exploitation cleanup IOC.", "key_conditions": "EID 23 or 26; IsExecutable=true; TargetFilename path is \\Temp\\ or \\AppData\\ or \\ProgramData\\ or \\Downloads\\; Image in [cmd.exe, powershell.exe, wscript.exe]", "false_positives": "Installers cleaning up temp executables after installation. Focus on temp-path PE deletions by scripting engines.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_delete_win_susp_file_deletion.yml", "curated": true}, {"id": "SYS-078", "title": "PE File Created in Temp by Unexpected Process", "sysmon_eids": [29], "tactic": "Defense Evasion", "tactic_id": "TA0005", "technique": "Masquerading", "technique_id": "T1036", "description": "Detects new PE executable files created in temp/appdata directories by non-installer processes (EID 29 is PE-specific, lower noise than EID 11). Dropped executables in these paths indicate initial access payload staging.", "key_conditions": "EventID=29; TargetFilename in \\Temp\\ or \\AppData\\ or \\ProgramData\\ or \\Downloads\\; Image not in [msiexec.exe, setup.exe, unzip.exe, 7z.exe, known updaters]", "false_positives": "Software updaters and installers extract executables to temp. Build process-based allowlist.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_creation_in_temp_folder.yml", "curated": true}, {"id": "SYS-079", "title": "PE File Written by Browser or Mail Client", "sysmon_eids": [29], "tactic": "Initial Access", "tactic_id": "TA0001", "technique": "User Execution: Malicious File", "technique_id": "T1204.002", "description": "Detects PE executable files written to disk by web browsers or mail clients (EID 29 \u2014 PE-specific detection) \u2014 a reliable indicator of file-based phishing delivery or drive-by download.", "key_conditions": "EventID=29; Image ends with [chrome.exe, firefox.exe, msedge.exe, brave.exe, OUTLOOK.EXE, thunderbird.exe]; TargetFilename ends with .exe or .dll (PE files written by browser/mail)", "false_positives": "Legitimate software downloaded through browser. Correlate with EID 15 Zone.Identifier for source URL.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_pe_drop_by_browser.yml", "curated": true}, {"id": "SYS-080", "title": "Raw Disk Read by Script or Office Process", "sysmon_eids": [9], "tactic": "Credential Access", "tactic_id": "TA0006", "technique": "OS Credential Dumping", "technique_id": "T1003", "description": "Detects raw physical disk reads from scripting engines or Office applications \u2014 much more suspicious than raw reads from dedicated tools. Indicates a script-embedded credential harvester.", "key_conditions": "Device contains PhysicalDrive or HarddiskVolumeShadowCopy; Image ends with [powershell.exe, wscript.exe, cscript.exe, WINWORD.EXE, EXCEL.EXE, mshta.exe]", "false_positives": "Essentially no legitimate use case for Office or PowerShell to perform raw disk reads.", "level": "critical", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/raw_access_thread/rawaccess_win_susp_script.yml", "curated": true}];
+var EVENT_TO_RULES={"1": ["SYS-001", "SYS-002", "SYS-003", "SYS-004", "SYS-005", "SYS-006", "SYS-007", "SYS-008", "SYS-009", "SYS-010", "SYS-011", "SYS-012", "SYS-013", "SYS-041", "SYS-042", "SYS-043", "SYS-044", "SYS-045", "SYS-046", "SYS-047", "SYS-048", "SYS-049", "SYS-050", "SYS-051", "SYS-052", "SYS-053"], "3": ["SYS-014", "SYS-015", "SYS-016", "SYS-017", "SYS-054", "SYS-055", "SYS-056", "SYS-057"], "7": ["SYS-018", "SYS-019", "SYS-058", "SYS-059", "SYS-060"], "8": ["SYS-020", "SYS-021", "SYS-061"], "10": ["SYS-022", "SYS-023", "SYS-062"], "11": ["SYS-024", "SYS-025", "SYS-063", "SYS-064", "SYS-065"], "12": ["SYS-026", "SYS-028", "SYS-066", "SYS-068", "SYS-069"], "13": ["SYS-026", "SYS-027", "SYS-028", "SYS-029", "SYS-066", "SYS-067", "SYS-068", "SYS-069"], "15": ["SYS-030", "SYS-072", "SYS-073"], "17": ["SYS-031", "SYS-032"], "18": ["SYS-031", "SYS-032"], "19": ["SYS-033"], "20": ["SYS-033"], "21": ["SYS-033"], "22": ["SYS-034", "SYS-035", "SYS-074", "SYS-075"], "6": ["SYS-036", "SYS-037"], "25": ["SYS-038"], "9": ["SYS-039", "SYS-080"], "4": ["SYS-040"], "16": ["SYS-040"], "2": ["SYS-070", "SYS-071"], "23": ["SYS-076", "SYS-077"], "26": ["SYS-076", "SYS-077"], "29": ["SYS-078", "SYS-079"]}
+
+const NOISE_ORDER={'Very Low':0,'Low':1,'Medium':2,'High':3,'Very High':4};
+const NOISE_CSS={'Very Low':'nb-vlow','Low':'nb-low','Medium':'nb-med','High':'nb-high','Very High':'nb-vhigh'};
+const TACTIC_COLORS={
+  'Defense Evasion':'#f59e0b','Credential Access':'#ef4444','Persistence':'#7c5cfc',
+  'Lateral Movement':'#2dd4bf','Command and Control':'#94a3b8','Initial Access':'#fb923c',
+  'Discovery':'#60a5fa','Execution':'#39d353','Exfiltration':'#f87171','Privilege Escalation':'#a855f7',
+};
+
+let noiseFilter='ALL', enabledFilter='ALL', searchQuery='', viewMode='grid', sortMode='id';
+let sigmaFilter='ALL', sigmaSearch='';
+const expanded=new Set(), sigmaExpanded=new Set();
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function hl(t,q){
+  if(!q||!t)return esc(String(t||''));
+  try{return esc(String(t)).replace(new RegExp(q.replace(/[-[\/{}()*+?.,\\^$|#\s]/g,'\\$&'),'gi'),m=>'<mark>'+m+'</mark>');}
+  catch(e){return esc(String(t||''));}
+}
+
+function buildSigmaChips(eid){
+  if(typeof EVENT_TO_RULES==='undefined')return'';
+  const rids=EVENT_TO_RULES[String(eid)]||[];
+  if(!rids.length)return'';
+  return rids.map(rid=>{
+    const r=SIGMA_RULES.find(x=>x.id===rid);if(!r)return'';
+    return`<span class="sigma-chip" onclick="jumpToSigmaRule('${rid}',event)" title="${esc(r.title)}">⚡${rid}</span>`;
+  }).join('');
+}
+
+function filter(){
+  const q=searchQuery.toLowerCase().trim();
+  let r=EVENTS.filter(e=>{
+    if(noiseFilter!=='ALL'&&e.noise_level!==noiseFilter)return false;
+    if(enabledFilter!=='ALL'&&String(e.default_enabled)!==enabledFilter)return false;
+    if(q){
+      const blob=[String(e.id),e.name,e.tag,e.description,e.forensic_value,
+        e.config_note,...(e.key_fields||[]),...(e.techniques||[])].filter(Boolean).join(' ').toLowerCase();
+      if(!blob.includes(q))return false;
+    }
+    return true;
+  });
+  if(sortMode==='id')r.sort((a,b)=>a.id-b.id);
+  else if(sortMode==='name')r.sort((a,b)=>a.name.localeCompare(b.name));
+  else if(sortMode==='noise')r.sort((a,b)=>(NOISE_ORDER[a.noise_level]??2)-(NOISE_ORDER[b.noise_level]??2));
+  return r;
+}
+
+function buildSidebar(){
+  const nav=document.getElementById('event-nav');
+  nav.innerHTML='';
+  const allBtn=document.createElement('button');
+  allBtn.className='cat-btn active';
+  allBtn.innerHTML=`<span style="font-size:11px">🔵</span><span style="flex:1;font-size:11px;font-family:var(--mono)">All Events</span><span style="font-family:var(--mono);font-size:9px;background:var(--surface3);color:var(--muted);padding:1px 5px;border-radius:7px">${EVENTS.length}</span>`;
+  allBtn.onclick=()=>{searchQuery='';document.getElementById('search').value='';noiseFilter='ALL';enabledFilter='ALL';document.querySelectorAll('.filter-chip').forEach(c=>{if(c.dataset.val==='ALL')c.classList.remove('dim');else c.classList.add('dim');});render();};
+  nav.appendChild(allBtn);
+}
+
+function buildCard(e,q){
+  const uid='c-'+e.id;
+  const isExp=expanded.has(uid);
+  const noiseCss=NOISE_CSS[e.noise_level]||'nb-med';
+  const sigmaChips=buildSigmaChips(e.id);
+  const techs=(e.techniques||[]).map(t=>`<a class="tech-badge" href="https://attack.mitre.org/techniques/${t.replace('.','/').slice(0,6)}/${t.includes('.')?t.split('.')[1]:''}" target="_blank">${esc(t)}</a>`).join('');
+  const fields=(e.key_fields||[]).map(f=>`<span class="field-chip">${esc(f)}</span>`).join('');
+  const uwsUrl=`https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/event.aspx?eventid=9000${e.id}`;
+
+  const card=document.createElement('div');
+  card.className='ecard'+(e.default_enabled?'':' default-off')+(isExp?' expanded':'');
+  card.id=uid;
+  card.innerHTML=`
+    <div class="ecard-top">
+      <div class="ecard-id">${e.id}</div>
+      <div class="ecard-main">
+        <div class="ecard-name">${hl(e.name,q)}</div>
+        <div class="ecard-meta">
+          <span class="noise-badge ${noiseCss}">${esc(e.noise_level)}</span>
+          <span class="enabled-badge ${e.default_enabled?'eb-on':'eb-off'}">${e.default_enabled?'Default On':'Requires Config'}</span>
+          ${e.filterable?'':'<span style="font-family:var(--mono);font-size:8px;color:var(--warn);border:1px solid rgba(245,158,11,.2);padding:1px 4px;border-radius:2px">Not Filterable</span>'}
+          ${e.tag!=='n/a'?`<span class="ecard-tag">${esc(e.tag)}</span>`:''}
+        </div>
+        ${sigmaChips?`<div class="sigma-chips-row">${sigmaChips}</div>`:''}
+      </div>
+      <button class="expand-btn">+</button>
+    </div>
+    <div class="ecard-desc">${hl(e.description,q)}</div>
+    <div class="ecard-detail">
+      <div class="detail-grid">
+        <div class="dblock full">
+          <div class="dlabel">Forensic Value &amp; Investigation Notes</div>
+          <div class="forensic-box">${hl(e.forensic_value,q)}</div>
+        </div>
+        <div class="dblock full">
+          <div class="dlabel">Key Event Fields</div>
+          <div class="fields-wrap">${fields}</div>
+        </div>
+        <div class="dblock">
+          <div class="dlabel">Noise Level</div>
+          <div class="dval"><span class="noise-badge ${noiseCss}">${esc(e.noise_level)}</span></div>
+        </div>
+        <div class="dblock">
+          <div class="dlabel">Default State</div>
+          <div class="dval"><span class="enabled-badge ${e.default_enabled?'eb-on':'eb-off'}">${e.default_enabled?'Enabled by default':'Must be explicitly enabled'}</span>${e.filterable?'':' <span style="font-size:10px;color:var(--warn)">— cannot be filtered</span>'}</div>
+        </div>
+        <div class="dblock full">
+          <div class="dlabel">Config &amp; Tuning Notes</div>
+          <div class="config-box">${hl(e.config_note||'',q)}</div>
+        </div>
+        ${techs?`<div class="dblock full"><div class="dlabel">ATT&CK Techniques</div><div>${techs}</div></div>`:''}
+        <div class="dblock full">
+          <div class="dlabel">References</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px">
+            <a class="ext-link" href="${esc(e.ms_url||'https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon')}" target="_blank">Microsoft Docs ↗</a>
+            <a class="ext-link" href="${uwsUrl}" target="_blank">Ultimate Win Security ↗</a>
+            <button class="copy-btn" data-copy="${e.id}">⎘ Copy EID ${e.id}</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  card.addEventListener('click',ev=>{
+    if(ev.target.classList.contains('copy-btn')||ev.target.tagName==='A'||ev.target.classList.contains('sigma-chip'))return;
+    if(isExp){expanded.delete(uid);card.classList.remove('expanded');}
+    else{expanded.add(uid);card.classList.add('expanded');}
+  });
+  card.querySelectorAll('.copy-btn').forEach(btn=>{
+    btn.addEventListener('click',ev=>{ev.stopPropagation();navigator.clipboard.writeText(btn.dataset.copy).catch(()=>{});showToast();});
+  });
+  return card;
+}
+
+function buildListCard(e,q){
+  const uid='l-'+e.id;
+  const isExp=expanded.has(uid);
+  const noiseCss=NOISE_CSS[e.noise_level]||'nb-med';
+  const uwsUrl=`https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/event.aspx?eventid=9000${e.id}`;
+  const techs=(e.techniques||[]).map(t=>`<a class="tech-badge" href="https://attack.mitre.org/techniques/${t.replace('.','/').slice(0,6)}/${t.includes('.')?t.split('.')[1]:''}" target="_blank">${esc(t)}</a>`).join('');
+  const fields=(e.key_fields||[]).map(f=>`<span class="field-chip">${esc(f)}</span>`).join('');
+  const card=document.createElement('div');
+  card.className='elcard'+(e.default_enabled?'':' default-off')+(isExp?' expanded':'');
+  card.innerHTML=`
+    <div class="elcard-row">
+      <span class="elcard-id">${e.id}</span>
+      <span class="noise-badge ${noiseCss}" style="flex-shrink:0">${esc(e.noise_level.replace(' ','\u00a0'))}</span>
+      <span class="elcard-name">${hl(e.name,q)}</span>
+      <span class="elcard-tag">${esc(e.tag)}</span>
+      <span class="elcard-arr">▶</span>
+    </div>
+    <div class="ecard-detail">
+      <div class="detail-grid">
+        <div class="dblock full"><div class="dlabel">Description</div><div class="dval">${hl(e.description,q)}</div></div>
+        <div class="dblock full"><div class="dlabel">Forensic Value</div><div class="forensic-box">${hl(e.forensic_value,q)}</div></div>
+        <div class="dblock full"><div class="dlabel">Key Fields</div><div class="fields-wrap">${fields}</div></div>
+        <div class="dblock full"><div class="dlabel">Config Notes</div><div class="config-box">${hl(e.config_note||'',q)}</div></div>
+        ${techs?`<div class="dblock full"><div class="dlabel">ATT&CK</div><div>${techs}</div></div>`:''}
+        <div class="dblock full"><div class="dlabel">References</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:2px">
+            <a class="ext-link" href="${esc(e.ms_url||'https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon')}" target="_blank">MS Docs ↗</a>
+            <a class="ext-link" href="${uwsUrl}" target="_blank">UltWinSec ↗</a>
+            <button class="copy-btn" data-copy="${e.id}">⎘ ${e.id}</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  card.addEventListener('click',ev=>{
+    if(ev.target.classList.contains('copy-btn')||ev.target.tagName==='A')return;
+    if(isExp){expanded.delete(uid);card.classList.remove('expanded');}
+    else{expanded.add(uid);card.classList.add('expanded');}
+  });
+  card.querySelectorAll('.copy-btn').forEach(btn=>{
+    btn.addEventListener('click',ev=>{ev.stopPropagation();navigator.clipboard.writeText(btn.dataset.copy).catch(()=>{});showToast();});
+  });
+  return card;
+}
+
+function render(){
+  buildSidebar();
+  const filtered=filter();
+  const container=document.getElementById('events-container');
+  container.innerHTML='';
+  document.getElementById('results-count').textContent=filtered.length;
+  if(!filtered.length){container.innerHTML='<div class="no-results"><div class="no-results-icon">🔍</div><h3>No events found</h3><p>Try adjusting filters.</p></div>';return;}
+  const q=searchQuery;
+  const grid=document.createElement('div');
+  grid.className=viewMode==='grid'?'events-grid':'events-list';
+  filtered.forEach((e,i)=>{
+    const card=viewMode==='grid'?buildCard(e,q):buildListCard(e,q);
+    card.style.animationDelay=Math.min(i*8,200)+'ms';
+    grid.appendChild(card);
+  });
+  container.appendChild(grid);
+}
+
+// ── SIGMA TAB ──────────────────────────────────────────────────────────────
+function initSigmaChips(){
+  const container=document.getElementById('sigma-tactic-chips');
+  const tactics=[...new Set(SIGMA_RULES.map(r=>r.tactic))].sort();
+  const allChip=document.createElement('span');
+  allChip.className='tactic-chip';
+  allChip.textContent='All';allChip.style.color='#94a3b8';allChip.style.borderColor='#374259';
+  allChip.onclick=()=>{sigmaFilter='ALL';renderSigma();};
+  container.appendChild(allChip);
+  tactics.forEach(t=>{
+    const c=document.createElement('span');
+    c.className='tactic-chip dim';c.textContent=t.split(' ')[0];c.title=t;
+    const col=TACTIC_COLORS[t]||'#94a3b8';c.style.color=col;c.style.borderColor=col+'55';
+    c.onclick=()=>{sigmaFilter=sigmaFilter===t?'ALL':t;renderSigma();};
+    container.appendChild(c);
+  });
+}
+
+function renderSigma(){
+  document.querySelectorAll('.tactic-chip').forEach(c=>{
+    if(c.textContent==='All')c.classList.toggle('dim',sigmaFilter!=='ALL');
+    else c.classList.toggle('dim',sigmaFilter!=='ALL'&&c.title!==sigmaFilter);
+  });
+  const q=sigmaSearch.toLowerCase();
+  let filtered=SIGMA_RULES.filter(r=>{
+    if(sigmaFilter!=='ALL'&&r.tactic!==sigmaFilter)return false;
+    if(q){
+      const blob=[r.title,r.description,r.tactic,r.technique,r.technique_id,r.key_conditions,...r.sysmon_eids.map(String)].join(' ').toLowerCase();
+      if(!blob.includes(q))return false;
+    }
+    return true;
+  });
+  const container=document.getElementById('sigma-content');
+  container.innerHTML='';
+  if(!filtered.length){container.innerHTML='<div class="no-results"><div class="no-results-icon">🔍</div><h3>No rules found</h3></div>';return;}
+  const grouped={};
+  for(const r of filtered){if(!grouped[r.tactic])grouped[r.tactic]=[];grouped[r.tactic].push(r);}
+  const tacticOrder=['Defense Evasion','Credential Access','Persistence','Lateral Movement','Command and Control','Initial Access','Discovery','Execution','Exfiltration','Privilege Escalation'];
+  const ordered=[...tacticOrder.filter(t=>grouped[t]),...Object.keys(grouped).filter(t=>!tacticOrder.includes(t))];
+  for(const tactic of ordered){
+    const rules=grouped[tactic];if(!rules)continue;
+    const color=TACTIC_COLORS[tactic]||'#94a3b8';
+    const section=document.createElement('div');section.className='sigma-tactic-section';
+    const hdr=document.createElement('div');hdr.className='sigma-tactic-hdr';
+    hdr.innerHTML=`<div class="sigma-tactic-dot" style="background:${color}"></div>
+      <span class="sigma-tactic-name">${esc(tactic)}</span>
+      <span class="sigma-tactic-id">${esc(rules[0].tactic_id)}</span>
+      <span class="sigma-tactic-count">${rules.length} rule${rules.length>1?'s':''}</span>`;
+    section.appendChild(hdr);
+    const grid=document.createElement('div');grid.className='sigma-rules-grid';
+    rules.forEach((rule,i)=>{
+      const uid='sr-'+rule.id;
+      const isExp=sigmaExpanded.has(uid);
+      const levelCls='slb-'+rule.level;
+      const eids=rule.sysmon_eids.map(e=>`<span class="eid-tag" onclick="jumpToEvent(${e},event)">${e}</span>`).join('');
+      const card=document.createElement('div');
+      card.className='src-card'+(isExp?' expanded':'');card.id=uid;
+      card.style.animationDelay=Math.min(i*8,200)+'ms';
+      card.innerHTML=`
+        <div class="src-top">
+          <div class="src-main">
+            <div class="src-title">${esc(rule.title)}</div>
+            <div class="src-meta">
+              <span class="slevel-badge ${levelCls}">${esc(rule.level)}</span>
+              <span class="src-tech">${esc(rule.technique_id)}</span>
+              <span class="src-eids">EID: ${rule.sysmon_eids.join(', ')}</span>
+            </div>
+          </div>
+          <button class="src-expand-btn">+</button>
+        </div>
+        <div class="src-desc">${esc(rule.description)}</div>
+        <div class="src-detail">
+          <div class="srd-block"><div class="srd-label">Event IDs — click to jump</div><div>${eids}</div></div>
+          <div class="srd-block"><div class="srd-label">Key Detection Conditions</div><div class="condition-box">${esc(rule.key_conditions)}</div></div>
+          <div class="srd-block"><div class="srd-label">False Positives</div><div class="fp-box">${esc(rule.false_positives)}</div></div>
+          <div class="srd-block"><div class="srd-label">ATT&CK · Sigma Rule</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px">
+              <a class="sigma-ext-link" href="https://attack.mitre.org/techniques/${esc(rule.technique_id.replace('.','/').slice(0,6))}/${rule.technique_id.includes('.')?rule.technique_id.split('.')[1]:''}" target="_blank">${esc(rule.technique_id)} ↗</a>
+              ${rule.sigma_url?`<a class="sigma-ext-link" href="${esc(rule.sigma_url)}" target="_blank">Sigma YAML ↗</a>`:''}
+            </div>
+          </div>
+        </div>`;
+      card.addEventListener('click',ev=>{
+        if(ev.target.tagName==='A'||ev.target.classList.contains('eid-tag'))return;
+        if(isExp){sigmaExpanded.delete(uid);card.classList.remove('expanded');}
+        else{sigmaExpanded.add(uid);card.classList.add('expanded');}
+      });
+      grid.appendChild(card);
+    });
+    section.appendChild(grid);container.appendChild(section);
+  }
+}
+
+function jumpToEvent(eid,ev){
+  ev.stopPropagation();
+  searchQuery=String(eid);document.getElementById('search').value=String(eid);
+  switchTab('events',document.getElementById('tab-events-btn'));
+  render();
+  setTimeout(()=>{const c=document.getElementById('c-'+eid);if(c)c.scrollIntoView({behavior:'smooth',block:'center'});},150);
+}
+
+function jumpToSigmaRule(rid,ev){
+  ev.stopPropagation();
+  sigmaFilter='ALL';sigmaSearch='';
+  if(document.getElementById('sigma-search'))document.getElementById('sigma-search').value='';
+  switchTab('sigma',document.getElementById('tab-sigma-btn'));
+  if(!document.getElementById('sigma-content').children.length){initSigmaChips();renderSigma();}
+  setTimeout(()=>{
+    const card=document.getElementById('sr-'+rid);
+    if(card){card.scrollIntoView({behavior:'smooth',block:'center'});
+      if(!sigmaExpanded.has('sr-'+rid)){sigmaExpanded.add('sr-'+rid);card.classList.add('expanded');}}
+  },200);
+}
+
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='sigma'&&document.getElementById('sigma-content')&&!document.getElementById('sigma-content').children.length){
+    initSigmaChips();renderSigma();
+  }
+}
+
+function showToast(){const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);}
+
+document.getElementById('search').addEventListener('input',e=>{searchQuery=e.target.value;render();});
+document.getElementById('sort-select').addEventListener('change',e=>{sortMode=e.target.value;render();});
+document.getElementById('grid-btn').addEventListener('click',()=>{viewMode='grid';document.getElementById('grid-btn').classList.add('active');document.getElementById('list-btn').classList.remove('active');render();});
+document.getElementById('list-btn').addEventListener('click',()=>{viewMode='list';document.getElementById('list-btn').classList.add('active');document.getElementById('grid-btn').classList.remove('active');render();});
+
+document.querySelectorAll('.filter-chip').forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    const noise=chip.dataset.noise;
+    const enabled=chip.dataset.enabled;
+    const val=chip.dataset.val;
+    if(val==='ALL'){
+      noiseFilter='ALL';enabledFilter='ALL';
+      document.querySelectorAll('.filter-chip').forEach(c=>{if(c.dataset.val==='ALL')c.classList.remove('dim');else c.classList.add('dim');});
+    } else if(noise){
+      noiseFilter=noiseFilter===noise?'ALL':noise;
+      document.querySelectorAll('[data-noise]').forEach(c=>c.classList.add('dim'));
+      if(noiseFilter!=='ALL')chip.classList.remove('dim');
+      else document.querySelector('[data-val="ALL"]').classList.remove('dim');
+    } else if(enabled!==undefined){
+      enabledFilter=enabledFilter===enabled?'ALL':enabled;
+      document.querySelectorAll('[data-enabled]').forEach(c=>c.classList.add('dim'));
+      if(enabledFilter!=='ALL')chip.classList.remove('dim');
+      else document.querySelector('[data-val="ALL"]').classList.remove('dim');
+    }
+    render();
+  });
+});
+
+const sigmaSearchEl=document.getElementById('sigma-search');
+if(sigmaSearchEl)sigmaSearchEl.addEventListener('input',e=>{sigmaSearch=e.target.value;renderSigma();});
+
+// Init
+document.querySelectorAll('[data-val]').forEach(c=>{if(c.dataset&&c.dataset.val==='ALL')c.classList&&c.classList.remove('dim');});
+document.querySelectorAll('[data-noise],[data-enabled]').forEach(c=>c&&c.classList&&c.classList.add('dim'));
+render();
+
+// ── FULL DATABASE SEARCH ─────────────────────────────────────────────────
+const CURATED_IDS = new Set(["SYS-001", "SYS-002", "SYS-003", "SYS-004", "SYS-005", "SYS-006", "SYS-007", "SYS-008", "SYS-009", "SYS-010", "SYS-011", "SYS-012", "SYS-013", "SYS-014", "SYS-015", "SYS-016", "SYS-017", "SYS-018", "SYS-019", "SYS-020", "SYS-021", "SYS-022", "SYS-023", "SYS-024", "SYS-025", "SYS-026", "SYS-027", "SYS-028", "SYS-029", "SYS-030", "SYS-031", "SYS-032", "SYS-033", "SYS-034", "SYS-035", "SYS-036", "SYS-037", "SYS-038", "SYS-039", "SYS-040", "SYS-041", "SYS-042", "SYS-043", "SYS-044", "SYS-045", "SYS-046", "SYS-047", "SYS-048", "SYS-049", "SYS-050", "SYS-051", "SYS-052", "SYS-053", "SYS-054", "SYS-055", "SYS-056", "SYS-057", "SYS-058", "SYS-059", "SYS-060", "SYS-061", "SYS-062", "SYS-063", "SYS-064", "SYS-065", "SYS-066", "SYS-067", "SYS-068", "SYS-069", "SYS-070", "SYS-071", "SYS-072", "SYS-073", "SYS-074", "SYS-075", "SYS-076", "SYS-077", "SYS-078", "SYS-079", "SYS-080"]);
+var fullDB = null; // lazy-loaded
+
+async function loadFullDB() {
+  if(fullDB) return fullDB;
+  document.getElementById('db-loading').classList.add('visible');
+  document.getElementById('db-search-btn').disabled = true;
+  try {
+    // Try fetching the companion JSON file
+    const res = await fetch('sysmon_rules_complete.json');
+    if(!res.ok) throw new Error('fetch failed');
+    const data = await res.json();
+    fullDB = data.rules || [];
+    console.log('Full DB loaded:', fullDB.length, 'rules');
+  } catch(e) {
+    // Fallback: use the curated set only (offline/same-page mode)
+    console.warn('Could not load full DB JSON, using curated set only:', e.message);
+    fullDB = SIGMA_RULES;
+  }
+  document.getElementById('db-loading').classList.remove('visible');
+  document.getElementById('db-search-btn').disabled = false;
+  return fullDB;
+}
+
+async function searchFullDB() {
+  const q = document.getElementById('db-search-input').value.trim().toLowerCase();
+  if(!q) return;
+  
+  const db = await loadFullDB();
+  
+  // Search across all fields
+  const matches = db.filter(r => {
+    // Skip rules already in curated set
+    if(CURATED_IDS.has(r.id)) return false;
+    const blob = [
+      r.id, r.title, r.description, r.tactic, r.technique, r.technique_id,
+      r.key_conditions, r.false_positives, r.level,
+      ...(r.sysmon_eids||[]).map(String)
+    ].filter(Boolean).join(' ').toLowerCase();
+    return blob.includes(q);
+  });
+  
+  const grid = document.getElementById('db-results-grid');
+  const section = document.getElementById('db-results-section');
+  const countEl = document.getElementById('db-results-count');
+  grid.innerHTML = '';
+  
+  if(!matches.length) {
+    grid.innerHTML = '<div style="padding:20px;font-family:var(--mono);font-size:12px;color:var(--muted)">No additional rules found for "' + esc(q) + '" in full database. Try a broader term.</div>';
+  } else {
+    matches.forEach((rule, i) => {
+      const card = buildDBCard(rule, q);
+      card.style.animationDelay = Math.min(i*6,200)+'ms';
+      grid.appendChild(card);
+    });
+  }
+  
+  countEl.textContent = matches.length + ' match' + (matches.length!==1?'es':'');
+  section.classList.add('visible');
+  section.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function buildDBCard(rule, q) {
+  const uid = 'db-' + rule.id;
+  const isExp = sigmaExpanded.has(uid);
+  const levelCls = 'slb-' + (rule.level||'medium');
+  const color = TACTIC_COLORS[rule.tactic] || '#94a3b8';
+  const eids = (rule.sysmon_eids||[]).map(e => 
+    `<span class="eid-tag" onclick="jumpToEvent(${e},event)">${e}</span>`
+  ).join('');
+  
+  const card = document.createElement('div');
+  card.className = 'src-card db-result' + (isExp?' expanded':'');
+  card.id = uid;
+  card.innerHTML = `
+    <div class="src-top">
+      <div class="src-main">
+        <div class="src-title">${hl(rule.title,q)}</div>
+        <div class="src-meta">
+          <span class="slevel-badge ${levelCls}">${esc(rule.level||'medium')}</span>
+          <span class="src-tech">${esc(rule.technique_id||'')}</span>
+          <span class="src-eids">EID: ${(rule.sysmon_eids||[]).join(', ')}</span>
+          <span style="font-family:var(--mono);font-size:8px;color:var(--muted2);background:var(--surface3);padding:1px 4px;border-radius:2px">${esc(rule.tactic||'')}</span>
+        </div>
+      </div>
+      <button class="src-expand-btn">+</button>
+    </div>
+    <div class="src-desc">${hl(rule.description||'',q)}</div>
+    <div class="src-detail">
+      <div class="srd-block"><div class="srd-label">Event IDs</div><div>${eids}</div></div>
+      <div class="srd-block"><div class="srd-label">Key Conditions</div><div class="condition-box">${esc(rule.key_conditions||'')}</div></div>
+      <div class="srd-block"><div class="srd-label">False Positives</div><div class="fp-box">${esc(rule.false_positives||'')}</div></div>
+      <div class="srd-block"><div class="srd-label">ATT&CK · Sigma</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px">
+          <a class="sigma-ext-link" href="https://attack.mitre.org/techniques/${esc((rule.technique_id||'').replace('.','/').slice(0,6))}/${(rule.technique_id||'').includes('.')?rule.technique_id.split('.')[1]:''}" target="_blank">${esc(rule.technique_id||'')}&nbsp;↗</a>
+          ${rule.sigma_url?`<a class="sigma-ext-link" href="${esc(rule.sigma_url)}" target="_blank">Sigma YAML ↗</a>`:''}
+        </div>
+      </div>
+    </div>`;
+  card.addEventListener('click', ev => {
+    if(ev.target.tagName==='A'||ev.target.classList.contains('eid-tag')) return;
+    if(isExp){sigmaExpanded.delete(uid);card.classList.remove('expanded');}
+    else{sigmaExpanded.add(uid);card.classList.add('expanded');}
+  });
+  return card;
+}
+
+function clearDBResults() {
+  document.getElementById('db-results-section').classList.remove('visible');
+  document.getElementById('db-results-grid').innerHTML='';
+  document.getElementById('db-search-input').value='';
+  document.getElementById('db-results-count').textContent='0 matches';
+}
+
+// Enter key triggers DB search
+document.getElementById('db-search-input')?.addEventListener('keydown', e => {
+  if(e.key === 'Enter') searchFullDB();
+});
+
+</script>
+</body>
+</html>

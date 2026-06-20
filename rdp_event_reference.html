@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RDP Event Reference — DFIR Quick Reference</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#090b0f;--surface:#0f1219;--surface2:#161b26;--surface3:#1e2535;
+  --border:#252e42;--border2:#374259;
+  --accent:#39d353;--accent2:#7c5cfc;--accent3:#ff6b35;--accent4:#39d353;
+  --danger:#ef4444;--warn:#f59e0b;
+  --text:#dde4ef;--muted:#6b7b96;--muted2:#3d4a62;
+  --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
+  --noise-vlow:#39d353;--noise-low:#60a5fa;--noise-med:#f59e0b;--noise-high:#ef4444;--noise-vhigh:#dc2626;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.02) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+
+.top-tabs{position:sticky;top:0;z-index:100;background:rgba(9,11,15,.97);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;backdrop-filter:blur(12px)}
+.tab-logo{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);padding:0 16px 0 0;margin-right:16px;border-right:1px solid var(--border);white-space:nowrap}
+.tab-btn{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--muted);padding:12px 16px;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-btn.sigma-tab.active{color:#ff6b35;border-bottom-color:#ff6b35}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+header{position:relative;z-index:10;padding:28px 40px 22px;border-bottom:1px solid var(--border);background:linear-gradient(160deg,#39d3530a 0%,transparent 60%)}
+.header-inner{max-width:1200px;margin:0 auto}
+.header-badge{display:inline-flex;align-items:center;gap:8px;background:#39d35312;border:1px solid #39d35330;color:var(--accent);font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;padding:3px 10px;border-radius:2px;margin-bottom:12px}
+.header-badge::before{content:'';width:5px;height:5px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+h1{font-family:var(--sans);font-size:clamp(22px,2.8vw,38px);font-weight:800;line-height:1.08;letter-spacing:-.03em;color:#fff;margin-bottom:7px}
+h1 em{color:var(--accent);font-style:normal}
+.header-sub{color:var(--muted);font-size:12px;max-width:680px;margin-bottom:16px;line-height:1.6}
+.stats-row{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:10px}
+.stat{display:flex;flex-direction:column;gap:1px}
+.stat-num{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent);line-height:1}
+.stat-label{font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.channel-legend{display:flex;flex-wrap:wrap;gap:5px}
+.channel-badge{font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 7px;border-radius:2px;background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+
+.main{padding:24px 40px 60px;max-width:1200px;margin:0 auto;position:relative;z-index:1}
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap}
+.results-info{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.results-info strong{color:var(--accent);font-size:12px}
+.search-wrap{position:relative;flex:1;max-width:380px;min-width:200px}
+.search-ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none}
+#search{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:7px 9px 7px 28px;border-radius:3px;outline:none;transition:border-color .15s}
+#search:focus{border-color:var(--accent)}
+#search::placeholder{color:var(--muted2)}
+.view-toggle{display:flex;gap:2px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:2px}
+.view-btn{background:none;border:none;color:var(--muted);padding:3px 7px;border-radius:2px;cursor:pointer;font-size:12px;transition:all .1s}
+.view-btn.active{background:var(--surface3);color:var(--text)}
+
+.events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:8px}
+.events-list{display:flex;flex-direction:column;gap:4px}
+.ecard{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;cursor:pointer;transition:border-color .12s,box-shadow .12s;animation:fadeUp .18s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.ecard:hover{border-color:var(--border2);box-shadow:0 2px 10px rgba(0,0,0,.3)}
+.ecard.expanded{border-color:var(--accent)}
+.ecard-top{padding:9px 11px 7px;display:flex;align-items:flex-start;gap:8px}
+.ecard-id{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent);line-height:1;flex-shrink:0;min-width:48px}
+.ecard-main{flex:1;min-width:0}
+.ecard-name{font-size:12px;font-weight:700;color:#fff;margin-bottom:4px;line-height:1.25}
+.ecard-meta{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.expand-btn{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;flex-shrink:0;transition:color .12s,transform .15s;line-height:1}
+.ecard.expanded .expand-btn{color:var(--accent);transform:rotate(45deg)}
+.ecard-desc{padding:0 11px 8px;color:var(--muted);font-size:12px;line-height:1.5;border-top:1px solid var(--border);padding-top:7px}
+.ecard-detail{display:none;border-top:1px solid var(--border);background:var(--surface2)}
+.ecard.expanded .ecard-detail{display:block}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr}
+.dblock{padding:8px 11px;border-bottom:1px solid var(--border)}
+.dblock:nth-child(odd){border-right:1px solid var(--border)}
+.dblock.full{grid-column:1/-1;border-right:none}
+.dlabel{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px}
+.dval{font-size:12px;color:var(--text);line-height:1.5}
+.forensic-box{background:#39d3530d;border-left:2px solid var(--accent);padding:7px 9px;border-radius:0 3px 3px 0;font-size:12px;color:var(--text);line-height:1.55}
+.channel-chip{font-family:var(--mono);font-size:9px;background:var(--surface3);color:var(--muted);padding:1px 6px;border-radius:2px;border:1px solid var(--border)}
+.noise-badge{font-family:var(--mono);font-size:8px;font-weight:700;padding:1px 5px;border-radius:2px;text-transform:uppercase}
+.nb-vlow{background:rgba(57,211,83,.1);color:var(--noise-vlow);border:1px solid rgba(57,211,83,.2)}
+.nb-low{background:rgba(96,165,250,.1);color:var(--noise-low);border:1px solid rgba(96,165,250,.2)}
+.nb-med{background:rgba(245,158,11,.1);color:var(--noise-med);border:1px solid rgba(245,158,11,.2)}
+.nb-high{background:rgba(239,68,68,.1);color:var(--noise-high);border:1px solid rgba(239,68,68,.2)}
+.nb-vhigh{background:rgba(220,38,38,.1);color:var(--noise-vhigh);border:1px solid rgba(220,38,38,.2)}
+.field-chip{font-family:var(--mono);font-size:9px;background:#39d3530d;border:1px solid #39d35325;color:var(--accent);padding:1px 5px;border-radius:2px}
+.copy-btn{display:inline-flex;align-items:center;gap:3px;margin-top:4px;background:none;border:1px solid var(--border2);color:var(--muted);font-family:var(--mono);font-size:9px;padding:2px 5px;border-radius:2px;cursor:pointer;transition:all .12s}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent)}
+.ext-link{font-family:var(--mono);font-size:9px;color:var(--accent2);text-decoration:none;border:1px solid rgba(124,92,252,.2);padding:1px 6px;border-radius:2px}
+.ext-link:hover{background:rgba(124,92,252,.06)}
+
+.sigma-chip{font-family:var(--mono);font-size:8px;font-weight:700;padding:1px 5px;border-radius:2px;background:rgba(255,107,53,.08);color:#ff6b35;border:1px solid rgba(255,107,53,.2);cursor:pointer;display:inline-flex;align-items:center;gap:2px}
+.sigma-chip:hover{background:rgba(255,107,53,.15)}
+.sigma-chips-row{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}
+
+.elcard{background:var(--surface);border:1px solid var(--border);border-radius:3px;cursor:pointer;transition:border-color .12s;animation:fadeUp .15s ease both;overflow:hidden}
+.elcard:hover{border-color:var(--border2)}
+.elcard.expanded{border-color:var(--accent)}
+.elcard-row{display:flex;align-items:center;gap:8px;padding:6px 11px}
+.elcard-id{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);flex:0 0 44px}
+.elcard-name{font-size:12px;color:var(--text);flex:0 0 220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.elcard-channel{font-family:var(--mono);font-size:9px;color:var(--muted2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.elcard-arr{color:var(--muted);font-size:11px;flex-shrink:0;transition:transform .12s}
+.elcard.expanded .elcard-arr{transform:rotate(90deg);color:var(--accent)}
+
+.sigma-page{padding:24px 36px;max-width:1200px;margin:0 auto}
+.sigma-intro{background:var(--surface);border:1px solid rgba(255,107,53,.2);border-radius:5px;padding:16px 20px;margin-bottom:24px}
+.sigma-intro h2{font-size:16px;font-weight:700;color:#fff;margin-bottom:6px}
+.sigma-intro p{color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:4px}
+.sigma-stats{display:flex;gap:18px;flex-wrap:wrap;margin-top:8px}
+.sigma-stat{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.sigma-stat strong{color:#ff6b35}
+.sigma-rules-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:8px}
+.src-card{background:var(--surface);border:1px solid rgba(255,107,53,.15);border-radius:4px;overflow:hidden;cursor:pointer;transition:all .12s;animation:fadeUp .18s ease both}
+.src-card:hover{border-color:rgba(255,107,53,.35);box-shadow:0 3px 12px rgba(0,0,0,.3)}
+.src-card.expanded{border-color:#ff6b35}
+.src-top{padding:10px 12px 7px;display:flex;align-items:flex-start;gap:8px}
+.slevel-badge{font-family:var(--mono);font-size:8px;font-weight:700;padding:1px 5px;border-radius:2px;text-transform:uppercase;flex-shrink:0}
+.slb-critical{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
+.slb-high{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2)}
+.slb-medium{background:rgba(245,158,11,.1);color:#f59e0b;border:1px solid rgba(245,158,11,.2)}
+.slb-low{background:rgba(100,116,139,.08);color:var(--muted);border:1px solid var(--border)}
+.src-main{flex:1;min-width:0}
+.src-title{font-size:12px;font-weight:700;color:#fff;margin-bottom:4px;line-height:1.3}
+.src-meta{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.src-tech{font-family:var(--mono);font-size:8px;padding:1px 5px;border-radius:2px;background:rgba(255,107,53,.08);color:#ff6b35;border:1px solid rgba(255,107,53,.2)}
+.src-eids{font-family:var(--mono);font-size:8px;color:var(--muted2)}
+.src-expand-btn{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;transition:color .12s,transform .15s;flex-shrink:0}
+.src-card.expanded .src-expand-btn{color:#ff6b35;transform:rotate(45deg)}
+.src-desc{padding:0 12px 8px;color:var(--muted);font-size:12px;line-height:1.5;border-top:1px solid var(--border);padding-top:7px}
+.src-detail{display:none;border-top:1px solid var(--border);background:var(--surface2)}
+.src-card.expanded .src-detail{display:block}
+.srd-block{padding:8px 12px;border-bottom:1px solid var(--border)}
+.srd-label{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px}
+.condition-box{font-family:var(--mono);font-size:10px;background:rgba(255,107,53,.04);border-left:2px solid #ff6b35;padding:7px 9px;border-radius:0 3px 3px 0;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.fp-box{font-size:12px;color:var(--muted);background:rgba(245,158,11,.04);border-left:2px solid var(--warn);padding:7px 9px;border-radius:0 3px 3px 0;line-height:1.5}
+.eid-tag{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:2px;background:#39d35312;color:var(--accent);border:1px solid #39d35330;cursor:pointer;display:inline-block;margin:1px}
+.eid-tag:hover{background:#39d35322}
+.sigma-ext-link{font-family:var(--mono);font-size:9px;color:#ff6b35;text-decoration:none;border:1px solid rgba(255,107,53,.2);padding:1px 6px;border-radius:2px}
+.sigma-ext-link:hover{background:rgba(255,107,53,.06)}
+
+.no-results{text-align:center;padding:60px;color:var(--muted)}
+.no-results-icon{font-size:40px;margin-bottom:12px;opacity:.3}
+.no-results h3{font-size:16px;color:var(--text);margin-bottom:6px}
+mark{background:#39d35330;color:var(--accent);border-radius:2px;padding:0 2px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface3);border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:11px;padding:6px 12px;border-radius:3px;z-index:9999;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
+
+@media(max-width:860px){
+  .events-grid{grid-template-columns:1fr}
+  .detail-grid{grid-template-columns:1fr}
+  .dblock:nth-child(odd){border-right:none}
+  header,.main,.sigma-page{padding-left:16px;padding-right:16px}
+}
+</style>
+</head>
+<body>
+
+<div class="top-tabs">
+  <span class="tab-logo">⊞ DFIR Quick Reference</span>
+  <button class="tab-btn active" id="tab-events-btn" onclick="switchTab('events',this)">Event Reference Events (15)</button>
+  <button class="tab-btn sigma-tab" id="tab-sigma-btn" onclick="switchTab('sigma',this)">⚡ Sigma Detection Rules (6)</button>
+</div>
+
+<div class="tab-content active" id="tab-events">
+<header>
+  <div class="header-inner">
+    <div class="header-badge">DFIR Reference v0.1</div>
+    <h1>RDP <em>Event Reference</em></h1>
+    <p class="header-sub">Cross-channel reference for Remote Desktop Protocol forensic analysis. Covers Security.evtx, TerminalServices-RemoteConnectionManager, TerminalServices-LocalSessionManager, and RDPCoreTS operational logs.</p>
+    <div class="stats-row">
+      <div class="stat"><span class="stat-num">15</span><span class="stat-label">Event IDs</span></div>
+      <div class="stat"><span class="stat-num">4</span><span class="stat-label">Log Channels</span></div>
+      <div class="stat"><span class="stat-num" style="color:#ff6b35">6</span><span class="stat-label">Sigma Rules</span></div>
+    </div>
+    <div class="channel-legend">
+      <span class="channel-badge">RemoteDesktopServices-RDPCoreTS/Operational</span><span class="channel-badge">Security</span><span class="channel-badge">TerminalServices-LocalSessionManager/Operational</span><span class="channel-badge">TerminalServices-RemoteConnectionManager/Operational</span>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-ico">⌕</span>
+      <input type="text" id="search" placeholder="Search events, fields, channels..." autocomplete="off" spellcheck="false">
+    </div>
+    <div class="results-info">Showing <strong id="results-count">15</strong> of 15 events</div>
+    <div class="view-toggle">
+      <button class="view-btn active" id="grid-btn">⊞</button>
+      <button class="view-btn" id="list-btn">☰</button>
+    </div>
+  </div>
+  <div id="events-container"></div>
+</div>
+</div><!-- /tab-events -->
+
+<div class="tab-content" id="tab-sigma">
+  <div class="sigma-page">
+    <div class="sigma-intro">
+      <h2>⚡ Sigma Detection Rules — RDP Event Reference</h2>
+      <p>Curated highest-signal Sigma-style detection rules for RDP Event Reference activity, based on patterns from <a href="https://github.com/SigmaHQ/sigma" target="_blank" style="color:#ff6b35">SigmaHQ/sigma</a>. Click any Event ID chip to jump to that event in the reference tab.</p>
+      <p style="font-size:11px;color:var(--muted2)">Convert to your SIEM: <a href="https://sigconverter.io" target="_blank" style="color:#ff6b35">sigconverter.io</a></p>
+      <div class="sigma-stats">
+        <span class="sigma-stat"><strong>6</strong> detection rules</span>
+        <span class="sigma-stat"><strong>4</strong> event IDs covered</span>
+      </div>
+    </div>
+    <div id="sigma-content"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Copied!</div>
+
+<script>
+var EVENTS=[{"id": 4624, "channel": "Security", "name": "Successful Logon (Type 10/7)", "description": "Account successfully logged on. LogonType=10 (RemoteInteractive) confirms RDP; LogonType=7 confirms session reconnect.", "forensic_value": "Primary RDP authentication evidence. IpAddress field shows source. Correlate LogonId across 4634/4647 for session duration. Type 7 vs Type 10 distinguishes new session from reconnect.", "noise": "Medium", "field_focus": "LogonType, IpAddress, TargetUserName, LogonId"}, {"id": 4625, "channel": "Security", "name": "Failed Logon", "description": "Account failed to log on. With LogonType=10, indicates failed RDP authentication attempt \u2014 brute force indicator at volume.", "forensic_value": "SubStatus 0xC000006A=bad password, 0xC0000064=bad username, 0xC0000234=locked out. High volume from single IP = brute force/spray. Not logged by default pre-Win10 on some builds.", "noise": "Medium", "field_focus": "LogonType, SubStatus, IpAddress"}, {"id": 4778, "channel": "Security", "name": "Session Reconnected", "description": "A session was reconnected to a Window Station \u2014 RDP session resumed after disconnect.", "forensic_value": "Tracks session continuity. Correlate with 4779 to build full session timeline including gaps that may indicate session hijacking.", "noise": "Low", "field_focus": "AccountName, ClientName, SessionName"}, {"id": 4779, "channel": "Security", "name": "Session Disconnected", "description": "A session was disconnected from a Window Station \u2014 user disconnected without logging off (session remains active).", "forensic_value": "Disconnected sessions remain logged on \u2014 a common attacker technique to maintain access without triggering logoff events. Long gaps between 4779 and a later 4778/4624 deserve scrutiny.", "noise": "Low", "field_focus": "AccountName, ClientName"}, {"id": 4634, "channel": "Security", "name": "Logoff", "description": "An account was logged off \u2014 terminates the LogonId session.", "forensic_value": "Pairs with 4624 to calculate session duration. Compare against 4647 (user-initiated) to detect forced/abnormal terminations.", "noise": "Medium", "field_focus": "TargetLogonId"}, {"id": 4647, "channel": "Security", "name": "User Initiated Logoff", "description": "User initiated the logoff process \u2014 logged when the user explicitly disconnects.", "forensic_value": "Distinguishes voluntary logoff from forced/crash termination (which produces only 4634). Absence of 4647 before 4634 suggests abnormal session end.", "noise": "Medium", "field_focus": "TargetUserName, TargetLogonId"}, {"id": 1149, "channel": "TerminalServices-RemoteConnectionManager/Operational", "name": "Network Authentication Succeeded", "description": "User authentication succeeded at the network layer \u2014 RDP client successfully connected to host BEFORE credential prompt. Despite the name, this is network-layer auth, not full login.", "forensic_value": "Logged even when full logon later fails \u2014 captures connection attempts that never reach Security log. Critical for spotting brute force when 4625 auditing is disabled. Includes source IP and username attempted.", "noise": "Medium", "field_focus": "Param1 (username), Param3 (source IP)"}, {"id": 21, "channel": "TerminalServices-LocalSessionManager/Operational", "name": "Session Logon Succeeded", "description": "Remote Desktop Services: Session logon succeeded \u2014 confirms full RDP session establishment with Session ID.", "forensic_value": "Provides the RDP Session ID used to correlate with other LocalSessionManager events. More reliable session-start marker than 4624 alone in some scenarios.", "noise": "Low", "field_focus": "User, SessionID, Address"}, {"id": 22, "channel": "TerminalServices-LocalSessionManager/Operational", "name": "Shell Start Notification", "description": "Shell start notification received \u2014 the user's shell (explorer.exe typically) has started in the RDP session.", "forensic_value": "Confirms the session reached an interactive desktop state, not just authentication. Gap between 21 and 22 can indicate profile load delays or scripted automation.", "noise": "Low", "field_focus": "User, SessionID"}, {"id": 23, "channel": "TerminalServices-LocalSessionManager/Operational", "name": "Session Logoff Succeeded", "description": "Remote Desktop Services: Session logoff succeeded.", "forensic_value": "Marks clean session termination. Pairs with EID 21 to bound session duration precisely.", "noise": "Low", "field_focus": "User, SessionID"}, {"id": 24, "channel": "TerminalServices-LocalSessionManager/Operational", "name": "Session Disconnected", "description": "Session has been disconnected \u2014 client side disconnect recorded on the local session manager.", "forensic_value": "Client-side disconnect view, complements Security log 4779. Useful when Security auditing is incomplete.", "noise": "Low", "field_focus": "User, SessionID"}, {"id": 25, "channel": "TerminalServices-LocalSessionManager/Operational", "name": "Session Reconnection Succeeded", "description": "Remote Desktop Services: Session reconnection succeeded.", "forensic_value": "Confirms successful reconnect to an existing session \u2014 correlate with 4778 in Security log for full picture.", "noise": "Low", "field_focus": "User, SessionID, Address"}, {"id": 261, "channel": "TerminalServices-RemoteConnectionManager/Operational", "name": "RDP Listener Received Connection", "description": "Logged as soon as an RDP connection is established at the listener level, before authentication. Provides no user/source info on its own.", "forensic_value": "Earliest indicator a connection attempt occurred. Use as a timestamp anchor when 1149 is missing (e.g., connection dropped before auth).", "noise": "Medium", "field_focus": "Timestamp only \u2014 no identifying fields"}, {"id": 98, "channel": "RemoteDesktopServices-RDPCoreTS/Operational", "name": "RDP Core Connection Established", "description": "RDPCoreTS-level connection event \u2014 lower-level RDP protocol stack confirmation of connection.", "forensic_value": "Useful when higher-level logs are cleared or disabled; provides an independent corroborating data point for RDP activity timing.", "noise": "Medium", "field_focus": "Source IP (in some builds)"}, {"id": 131, "channel": "RemoteDesktopServices-RDPCoreTS/Operational", "name": "RDP Core Connection Source IP", "description": "Records the source IP address for an RDPCoreTS connection \u2014 useful when other logs lack source IP.", "forensic_value": "One of the few logs that reliably retains source IP for RDP connections even when Security log auditing is misconfigured. Important fallback artifact.", "noise": "Medium", "field_focus": "Source IP"}];
+var SIGMA_RULES=[{"id": "RDP-001", "title": "RDP Brute Force \u2014 High Volume 4625 with LogonType 10", "eids": [4625], "channel": "Security", "tactic": "Credential Access", "technique": "Brute Force: Password Guessing", "technique_id": "T1110.001", "description": "Detects high-volume failed RDP logon attempts from a single source IP within a short time window \u2014 classic RDP brute force pattern.", "key_conditions": "EventID=4625; LogonType=10; multiple distinct TargetUserName or repeated attempts from same IpAddress within 5-minute window exceeding baseline threshold (e.g. >10 attempts)", "false_positives": "Misconfigured RDP clients with cached bad credentials; expired password on automated RDP-based monitoring tools.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/builtin/security/win_security_susp_failed_logon_source.yml"}, {"id": "RDP-002", "title": "RDP Login from Public/Non-RFC1918 IP Address", "eids": [4624, 1149], "channel": "Security / RemoteConnectionManager", "tactic": "Initial Access", "technique": "External Remote Services", "technique_id": "T1133", "description": "Detects successful RDP authentication where the source IP is a public (non-RFC 1918) address \u2014 indicates RDP exposed directly to the internet, a major attack surface.", "key_conditions": "EventID=4624 with LogonType=10, or EventID=1149; IpAddress is not in 10.0.0.0/8, 172.16.0.0/12, or 192.168.0.0/16", "false_positives": "Legitimate remote workers connecting via VPN that terminates before reaching the RDP host (verify VPN gateway IP ranges are excluded).", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/builtin/security/win_security_rdp_login.yml"}, {"id": "RDP-003", "title": "RDP Session from Unusual Hour or Geography", "eids": [4624], "channel": "Security", "tactic": "Lateral Movement", "technique": "Remote Desktop Protocol", "technique_id": "T1021.001", "description": "Detects RDP logons (LogonType=10) occurring outside normal business hours or from geolocations inconsistent with the user's typical pattern.", "key_conditions": "EventID=4624; LogonType=10; TimeCreated outside baseline hours (e.g. 22:00\u201305:00 local); or IP geolocation inconsistent with user history", "false_positives": "Legitimate off-hours administrative work, international travel, follow-the-sun support teams.", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/builtin/security/win_security_rdp_login.yml"}, {"id": "RDP-004", "title": "RDP Logon Type 7 Without Preceding Disconnect", "eids": [4624, 4779], "channel": "Security", "tactic": "Lateral Movement", "technique": "Remote Desktop Protocol", "technique_id": "T1021.001", "description": "Detects LogonType=7 (reconnect) events that have no corresponding prior 4779 (disconnect) \u2014 may indicate session hijacking or RDP session takeover.", "key_conditions": "EventID=4624; LogonType=7; no matching EventID=4779 for the same SessionName/LogonId within a reasonable preceding window", "false_positives": "Logging gaps from log rollover or service restarts; legitimate session resume after host reboot.", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/builtin/security/win_security_rdp_login.yml"}, {"id": "RDP-005", "title": "Successful RDP Auth (1149) With No Matching 4624", "eids": [1149, 4624], "channel": "RemoteConnectionManager / Security", "tactic": "Credential Access", "technique": "Brute Force", "technique_id": "T1110", "description": "Detects network-layer RDP authentication success (1149) without a corresponding successful Security log logon (4624) \u2014 may indicate authentication that bypassed normal logon auditing, or NLA-only connection probing.", "key_conditions": "EventID=1149 present; no matching EventID=4624 with LogonType=10 for same source IP/user within correlation window", "false_positives": "Logon auditing not enabled (policy gap, not malicious); timing/correlation window too tight causing false mismatch.", "level": "medium", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/builtin/security/win_security_rdp_login.yml"}, {"id": "RDP-006", "title": "Mass RDP Session Logons Across Multiple Hosts (Lateral Movement)", "eids": [4624], "channel": "Security", "tactic": "Lateral Movement", "technique": "Remote Desktop Protocol", "technique_id": "T1021.001", "description": "Detects a single account establishing RDP sessions (LogonType=10) to many distinct hosts within a short time window \u2014 consistent with lateral movement using stolen credentials.", "key_conditions": "EventID=4624; LogonType=10; same TargetUserName connecting to 3+ distinct Computer/host names within 1 hour", "false_positives": "IT/helpdesk staff performing legitimate multi-host administration; jump-box/bastion host usage patterns.", "level": "high", "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/builtin/security/win_security_rdp_login.yml"}];
+var EVENT_TO_RULES={"4625": ["RDP-001"], "4624": ["RDP-002", "RDP-003", "RDP-004", "RDP-005", "RDP-006"], "1149": ["RDP-002", "RDP-005"], "4779": ["RDP-004"]};
+var MS_SEARCH_BASE="https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/event.aspx?eventID=";
+
+const NOISE_CSS={'Very Low':'nb-vlow','Low':'nb-low','Medium':'nb-med','High':'nb-high','Very High':'nb-vhigh'};
+
+let searchQuery='', viewMode='grid';
+const expanded=new Set(), sigmaExpanded=new Set();
+let sigmaSearch='';
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function hl(t,q){
+  if(!q||!t)return esc(String(t||''));
+  try{return esc(String(t)).replace(new RegExp(q.replace(/[-[\/{}()*+?.,\\^$|#\s]/g,'\\$&'),'gi'),m=>'<mark>'+m+'</mark>');}
+  catch(e){return esc(String(t||''));}
+}
+
+function buildSigmaChips(eid){
+  if(typeof EVENT_TO_RULES==='undefined')return'';
+  const rids=EVENT_TO_RULES[String(eid)]||[];
+  if(!rids.length)return'';
+  return rids.map(rid=>{
+    const r=SIGMA_RULES.find(x=>x.id===rid);if(!r)return'';
+    return`<span class="sigma-chip" onclick="jumpToSigmaRule('${rid}',event)" title="${esc(r.title)}">⚡${rid}</span>`;
+  }).join('');
+}
+
+function filterEvents(){
+  const q=searchQuery.toLowerCase().trim();
+  let r=EVENTS.filter(e=>{
+    if(!q)return true;
+    const blob=[String(e.id),e.name,e.channel,e.description,e.forensic_value,e.field_focus].filter(Boolean).join(' ').toLowerCase();
+    return blob.includes(q);
+  });
+  return r;
+}
+
+function buildCard(e,q){
+  const uid='c-'+e.id;
+  const isExp=expanded.has(uid);
+  const noiseCss=NOISE_CSS[e.noise]||'nb-med';
+  const sigmaChips=buildSigmaChips(e.id);
+  const card=document.createElement('div');
+  card.className='ecard'+(isExp?' expanded':'');
+  card.id=uid;
+  card.innerHTML=`
+    <div class="ecard-top">
+      <div class="ecard-id">${hl(String(e.id),q)}</div>
+      <div class="ecard-main">
+        <div class="ecard-name">${hl(e.name,q)}</div>
+        <div class="ecard-meta">
+          <span class="channel-chip">${hl(e.channel,q)}</span>
+          <span class="noise-badge ${noiseCss}">${esc(e.noise)}</span>
+        </div>
+        ${sigmaChips?`<div class="sigma-chips-row">${sigmaChips}</div>`:''}
+      </div>
+      <button class="expand-btn">+</button>
+    </div>
+    <div class="ecard-desc">${hl(e.description,q)}</div>
+    <div class="ecard-detail">
+      <div class="detail-grid">
+        <div class="dblock full">
+          <div class="dlabel">Forensic Value &amp; Investigation Notes</div>
+          <div class="forensic-box">${hl(e.forensic_value,q)}</div>
+        </div>
+        <div class="dblock"><div class="dlabel">Log Channel</div><div class="dval"><span class="channel-chip">${esc(e.channel)}</span></div></div>
+        <div class="dblock"><div class="dlabel">Noise Level</div><div class="dval"><span class="noise-badge ${noiseCss}">${esc(e.noise)}</span></div></div>
+        <div class="dblock full">
+          <div class="dlabel">Key Fields to Examine</div>
+          <div class="dval"><span class="field-chip">${esc(e.field_focus)}</span></div>
+        </div>
+        <div class="dblock full">
+          <div class="dlabel">References</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px">
+            <a class="ext-link" href="${MS_SEARCH_BASE}${e.id}" target="_blank">Search MS Docs ↗</a>
+            <button class="copy-btn" data-copy="${e.id}">⎘ Copy EID ${e.id}</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  card.addEventListener('click',ev=>{
+    if(ev.target.classList.contains('copy-btn')||ev.target.tagName==='A'||ev.target.classList.contains('sigma-chip'))return;
+    if(isExp){expanded.delete(uid);card.classList.remove('expanded');}
+    else{expanded.add(uid);card.classList.add('expanded');}
+  });
+  card.querySelectorAll('.copy-btn').forEach(btn=>{
+    btn.addEventListener('click',ev=>{ev.stopPropagation();navigator.clipboard.writeText(btn.dataset.copy).catch(()=>{});showToast();});
+  });
+  return card;
+}
+
+function buildListCard(e,q){
+  const uid='l-'+e.id;
+  const isExp=expanded.has(uid);
+  const noiseCss=NOISE_CSS[e.noise]||'nb-med';
+  const card=document.createElement('div');
+  card.className='elcard'+(isExp?' expanded':'');
+  card.innerHTML=`
+    <div class="elcard-row">
+      <span class="elcard-id">${hl(String(e.id),q)}</span>
+      <span class="noise-badge ${noiseCss}" style="flex-shrink:0">${esc(e.noise)}</span>
+      <span class="elcard-name">${hl(e.name,q)}</span>
+      <span class="elcard-channel">${hl(e.channel,q)}</span>
+      <span class="elcard-arr">▶</span>
+    </div>
+    <div class="ecard-detail">
+      <div class="detail-grid">
+        <div class="dblock full"><div class="dlabel">Description</div><div class="dval">${hl(e.description,q)}</div></div>
+        <div class="dblock full"><div class="dlabel">Forensic Value</div><div class="forensic-box">${hl(e.forensic_value,q)}</div></div>
+        <div class="dblock full"><div class="dlabel">Key Fields</div><div class="dval"><span class="field-chip">${esc(e.field_focus)}</span></div></div>
+        <div class="dblock full"><div class="dlabel">References</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:2px">
+            <a class="ext-link" href="${MS_SEARCH_BASE}${e.id}" target="_blank">Search MS Docs ↗</a>
+            <button class="copy-btn" data-copy="${e.id}">⎘ ${e.id}</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  card.addEventListener('click',ev=>{
+    if(ev.target.classList.contains('copy-btn')||ev.target.tagName==='A')return;
+    if(isExp){expanded.delete(uid);card.classList.remove('expanded');}
+    else{expanded.add(uid);card.classList.add('expanded');}
+  });
+  card.querySelectorAll('.copy-btn').forEach(btn=>{
+    btn.addEventListener('click',ev=>{ev.stopPropagation();navigator.clipboard.writeText(btn.dataset.copy).catch(()=>{});showToast();});
+  });
+  return card;
+}
+
+function render(){
+  const filtered=filterEvents();
+  const container=document.getElementById('events-container');
+  container.innerHTML='';
+  document.getElementById('results-count').textContent=filtered.length;
+  if(!filtered.length){container.innerHTML='<div class="no-results"><div class="no-results-icon">🔍</div><h3>No events found</h3></div>';return;}
+  const q=searchQuery;
+  const grid=document.createElement('div');
+  grid.className=viewMode==='grid'?'events-grid':'events-list';
+  filtered.forEach((e,i)=>{
+    const card=viewMode==='grid'?buildCard(e,q):buildListCard(e,q);
+    card.style.animationDelay=Math.min(i*8,200)+'ms';
+    grid.appendChild(card);
+  });
+  container.appendChild(grid);
+}
+
+function renderSigma(){
+  const q=sigmaSearch.toLowerCase();
+  let filtered=SIGMA_RULES.filter(r=>{
+    if(!q)return true;
+    const blob=[r.title,r.description,r.tactic,r.technique,r.technique_id,r.key_conditions,...r.eids.map(String)].join(' ').toLowerCase();
+    return blob.includes(q);
+  });
+  const container=document.getElementById('sigma-content');
+  container.innerHTML='';
+  if(!filtered.length){container.innerHTML='<div class="no-results"><div class="no-results-icon">🔍</div><h3>No rules found</h3></div>';return;}
+  const grid=document.createElement('div');grid.className='sigma-rules-grid';
+  filtered.forEach((rule,i)=>{
+    const uid='sr-'+rule.id;
+    const isExp=sigmaExpanded.has(uid);
+    const levelCls='slb-'+rule.level;
+    const eids=rule.eids.map(e=>`<span class="eid-tag" onclick="jumpToEvent(${e},event)">${e}</span>`).join('');
+    const card=document.createElement('div');
+    card.className='src-card'+(isExp?' expanded':'');card.id=uid;
+    card.style.animationDelay=Math.min(i*8,200)+'ms';
+    card.innerHTML=`
+      <div class="src-top">
+        <div class="src-main">
+          <div class="src-title">${esc(rule.title)}</div>
+          <div class="src-meta">
+            <span class="slevel-badge ${levelCls}">${esc(rule.level)}</span>
+            <span class="src-tech">${esc(rule.technique_id)}</span>
+            <span class="src-eids">EID: ${rule.eids.join(', ')} (${esc(rule.channel)})</span>
+          </div>
+        </div>
+        <button class="src-expand-btn">+</button>
+      </div>
+      <div class="src-desc">${esc(rule.description)}</div>
+      <div class="src-detail">
+        <div class="srd-block"><div class="srd-label">Event IDs — click to jump</div><div>${eids}</div></div>
+        <div class="srd-block"><div class="srd-label">Key Detection Conditions</div><div class="condition-box">${esc(rule.key_conditions)}</div></div>
+        <div class="srd-block"><div class="srd-label">False Positives</div><div class="fp-box">${esc(rule.false_positives)}</div></div>
+        <div class="srd-block"><div class="srd-label">ATT&CK · Sigma</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px">
+            <a class="sigma-ext-link" href="https://attack.mitre.org/techniques/${esc(rule.technique_id.replace('.','/').slice(0,6))}/${rule.technique_id.includes('.')?rule.technique_id.split('.')[1]:''}" target="_blank">${esc(rule.technique_id)} ↗</a>
+            ${rule.sigma_url?`<a class="sigma-ext-link" href="${esc(rule.sigma_url)}" target="_blank">Sigma YAML ↗</a>`:''}
+          </div>
+        </div>
+      </div>`;
+    card.addEventListener('click',ev=>{
+      if(ev.target.tagName==='A'||ev.target.classList.contains('eid-tag'))return;
+      if(isExp){sigmaExpanded.delete(uid);card.classList.remove('expanded');}
+      else{sigmaExpanded.add(uid);card.classList.add('expanded');}
+    });
+    grid.appendChild(card);
+  });
+  container.appendChild(grid);
+}
+
+function jumpToEvent(eid,ev){
+  ev.stopPropagation();
+  searchQuery=String(eid);document.getElementById('search').value=String(eid);
+  switchTab('events',document.getElementById('tab-events-btn'));
+  render();
+  setTimeout(()=>{const c=document.getElementById('c-'+eid);if(c)c.scrollIntoView({behavior:'smooth',block:'center'});},150);
+}
+
+function jumpToSigmaRule(rid,ev){
+  ev.stopPropagation();
+  sigmaSearch='';
+  switchTab('sigma',document.getElementById('tab-sigma-btn'));
+  if(!document.getElementById('sigma-content').children.length){renderSigma();}
+  setTimeout(()=>{
+    const card=document.getElementById('sr-'+rid);
+    if(card){card.scrollIntoView({behavior:'smooth',block:'center'});
+      if(!sigmaExpanded.has('sr-'+rid)){sigmaExpanded.add('sr-'+rid);card.classList.add('expanded');}}
+  },200);
+}
+
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='sigma'&&!document.getElementById('sigma-content').children.length){renderSigma();}
+}
+
+function showToast(){const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);}
+
+document.getElementById('search').addEventListener('input',e=>{searchQuery=e.target.value;render();});
+document.getElementById('grid-btn').addEventListener('click',()=>{viewMode='grid';document.getElementById('grid-btn').classList.add('active');document.getElementById('list-btn').classList.remove('active');render();});
+document.getElementById('list-btn').addEventListener('click',()=>{viewMode='list';document.getElementById('list-btn').classList.add('active');document.getElementById('grid-btn').classList.remove('active');render();});
+
+render();
+</script>
+</body>
+</html>

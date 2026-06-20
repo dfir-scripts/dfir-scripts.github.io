@@ -1,0 +1,3619 @@
+{
+  "meta": {
+    "version": "r2026-04-01",
+    "source": "SigmaHQ/sigma (github.com/SigmaHQ/sigma)",
+    "description": "Complete curated Sysmon Sigma rule database for DFIR reference. Covers all Sysmon event types with behavioral detection patterns. Not a mirror of the full SigmaHQ repo \u2014 rules are hand-curated for clarity and investigative value.",
+    "total_rules": 195,
+    "curated_count": 80,
+    "license": "Detection Rule License 1.1 (DRL 1.1)",
+    "convert_at": "https://sigconverter.io"
+  },
+  "rules": [
+    {
+      "id": "SYS-001",
+      "title": "LOLBin \u2014 Certutil Download or Decode",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution: Certutil",
+      "technique_id": "T1218.013",
+      "description": "Detects abuse of certutil.exe for file download (-urlcache -split -f), base64 decode, or hash verification \u2014 all commonly used for payload delivery.",
+      "key_conditions": "Image ends with certutil.exe; CommandLine contains -urlcache or -decode or -decodehex or -verifyctl, or URL patterns (http/ftp)",
+      "false_positives": "Legitimate IT use of certutil for certificate management. Tune by excluding known-good command patterns.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_certutil_encode.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-002",
+      "title": "Suspicious PowerShell Encoded Command Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Execution",
+      "tactic_id": "TA0002",
+      "technique": "PowerShell",
+      "technique_id": "T1059.001",
+      "description": "Detects PowerShell execution with encoded commands (-EncodedCommand, -enc, -e) or obfuscated invocation flags, used to hide malicious scripts from command-line logging.",
+      "key_conditions": "Image ends with powershell.exe or pwsh.exe; CommandLine contains -EncodedCommand or -enc or -e followed by base64 string, or hidden window flags (-WindowStyle Hidden, -NonI, -NoP)",
+      "false_positives": "Some legitimate applications and scripts use encoded commands. Tune by allowlisting known-good base64 patterns.",
+      "level": "medium",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_powershell_base64_encoded_cmd.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-003",
+      "title": "Office Application Spawning Suspicious Child Process",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Initial Access",
+      "tactic_id": "TA0001",
+      "technique": "Phishing: Spearphishing Attachment",
+      "technique_id": "T1566.001",
+      "description": "Detects Office applications (Word, Excel, Outlook, PowerPoint) spawning scripting interpreters, command shells, or other suspicious child processes \u2014 a primary macro/exploit delivery indicator.",
+      "key_conditions": "ParentImage ends with WINWORD.EXE/EXCEL.EXE/POWERPNT.EXE/OUTLOOK.EXE; NewProcessName in [cmd.exe, powershell.exe, wscript.exe, cscript.exe, mshta.exe, certutil.exe, regsvr32.exe, wmic.exe, bitsadmin.exe, curl.exe, wget.exe]",
+      "false_positives": "Some legitimate macros spawn cmd/PowerShell for legitimate automation. Context-dependent.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_office_spawn_exe_from_temp.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-004",
+      "title": "Mshta Executing Script Content",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution: Mshta",
+      "technique_id": "T1218.005",
+      "description": "Detects mshta.exe executing HTA content from remote URLs, inline VBScript/JScript, or suspicious file paths \u2014 a common phishing payload delivery technique.",
+      "key_conditions": "Image ends with mshta.exe; CommandLine contains http:// or https:// or javascript: or vbscript: or .hta from temp/appdata paths",
+      "false_positives": "Legitimate HTA applications \u2014 rare in modern environments.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_mshta.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-005",
+      "title": "Regsvr32 Executing Remote Scriptlet (Squiblydoo)",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution: Regsvr32",
+      "technique_id": "T1218.010",
+      "description": "Detects the Squiblydoo technique: regsvr32 loading a COM scriptlet from a remote URL or an unusual local path, executing arbitrary code while bypassing AppLocker.",
+      "key_conditions": "Image ends with regsvr32.exe; CommandLine contains /s /u /i: or /s /i: followed by http:// or \\\\UNC path or .sct extension",
+      "false_positives": "Legitimate COM registration \u2014 should not include remote URLs.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_regsvr32_susp_exec.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-006",
+      "title": "WMI Spawning Command Shell \u2014 Lateral Movement",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Lateral Movement",
+      "tactic_id": "TA0008",
+      "technique": "Windows Management Instrumentation",
+      "technique_id": "T1047",
+      "description": "Detects WMI-based remote execution (wmiexec, Invoke-WmiMethod) producing cmd.exe or powershell.exe as a child of WmiPrvSE.exe.",
+      "key_conditions": "ParentImage ends with WmiPrvSE.exe; NewProcessName in [cmd.exe, powershell.exe, cscript.exe, wscript.exe] with unexpected CommandLine",
+      "false_positives": "Legitimate WMI-based management (SCCM, monitoring agents). Tune by excluding known management system source IPs.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_wmi_spawn_shell.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-007",
+      "title": "Renamed Legitimate Binary Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Masquerading: Rename System Utilities",
+      "technique_id": "T1036.003",
+      "description": "Detects execution of legitimate Windows binaries that have been renamed \u2014 a common technique to evade detection rules that match on process name. OriginalFileName differs from Image name.",
+      "key_conditions": "OriginalFileName in [cmd.exe, powershell.exe, cscript.exe, wscript.exe, mshta.exe, regsvr32.exe, rundll32.exe, schtasks.exe, net.exe] but Image name is different",
+      "false_positives": "Very rare legitimate renaming. High confidence detection.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_renamed_binary.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-008",
+      "title": "LSASS Dump via Command Line Tools",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "OS Credential Dumping: LSASS Memory",
+      "technique_id": "T1003.001",
+      "description": "Detects credential dumping tools invoked via command line: procdump targeting lsass, task manager dump, comsvcs.dll MiniDump, or direct LSASS access utilities.",
+      "key_conditions": "CommandLine contains procdump and lsass, or comsvcs.dll and MiniDump and lsass, or ProcDump and -ma, or werfault -s -p [lsass PID]",
+      "false_positives": "Legitimate debugging of LSASS by security tools. Very rare.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_lsass_dump_comsvcs.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-009",
+      "title": "Schtasks Creating Persistent Scheduled Task",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Persistence",
+      "tactic_id": "TA0003",
+      "technique": "Scheduled Task",
+      "technique_id": "T1053.005",
+      "description": "Detects scheduled task creation via schtasks.exe with suspicious parameters: tasks running from temp/appdata, encoded commands, or at system boot.",
+      "key_conditions": "Image ends with schtasks.exe; CommandLine contains /create and (/sc onstart or /sc onlogon) and (cmd /c or powershell or %TEMP% or %APPDATA%)",
+      "false_positives": "Legitimate scheduled task creation by installers and management tools.",
+      "level": "medium",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_schtasks_persistence.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-010",
+      "title": "Net.exe Adding User to Administrators Group",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Persistence",
+      "tactic_id": "TA0003",
+      "technique": "Create Account: Local Account",
+      "technique_id": "T1136.001",
+      "description": "Detects net.exe or net1.exe adding a user account to the Administrators local group \u2014 a backdoor account creation technique used by ransomware operators.",
+      "key_conditions": "Image ends with net.exe or net1.exe; CommandLine contains localgroup and Administrators and /add",
+      "false_positives": "Legitimate admin operations. Alert and review all occurrences.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_net_user_add.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-011",
+      "title": "PsExec Execution \u2014 Local or Remote",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Lateral Movement",
+      "tactic_id": "TA0008",
+      "technique": "Remote Services: SMB",
+      "technique_id": "T1021.002",
+      "description": "Detects PsExec execution via OriginalFileName (psexec.exe) regardless of renaming, or the PSEXESVC.exe service being started on the target machine.",
+      "key_conditions": "OriginalFileName=psexec.exe or Image ends with PSEXESVC.exe, or ParentImage is services.exe with PSEXESVC in CommandLine",
+      "false_positives": "Legitimate administrative PsExec use. Alert and review.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_sysinternals_psexec.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-012",
+      "title": "Whoami Execution \u2014 Reconnaissance",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Discovery",
+      "tactic_id": "TA0007",
+      "technique": "System Owner/User Discovery",
+      "technique_id": "T1033",
+      "description": "Detects execution of whoami.exe, which attackers run immediately after gaining access to confirm their identity and privileges on the compromised host.",
+      "key_conditions": "Image ends with whoami.exe; especially when ParentImage is cmd.exe, powershell.exe, or a suspicious process",
+      "false_positives": "Legitimate admin use. Tune by correlating with other recon activity.",
+      "level": "low",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_whoami.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-013",
+      "title": "BloodHound/SharpHound AD Reconnaissance",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Discovery",
+      "tactic_id": "TA0007",
+      "technique": "Domain Trust Discovery",
+      "technique_id": "T1482",
+      "description": "Detects SharpHound (BloodHound collector) execution via OriginalFileName, command-line flags, or characteristic output filenames.",
+      "key_conditions": "Image contains SharpHound or OriginalFileName=SharpHound; or CommandLine contains --CollectionMethods or -c All or --outputdirectory and --zipfilename; or file creation of *_computers.json or *_BloodHound.zip",
+      "false_positives": "Authorized red team operations.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_hktl_sharphound.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-014",
+      "title": "PowerShell Making Outbound Network Connection",
+      "sysmon_eids": [
+        3
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Application Layer Protocol",
+      "technique_id": "T1071.001",
+      "description": "Detects PowerShell or pwsh making outbound network connections, indicating download cradle, C2 callback, or lateral movement activity.",
+      "key_conditions": "Image ends with powershell.exe or pwsh.exe; Initiated=true; DestinationPort in [80,443,8080,8443] or any non-standard port; DestinationIp not in internal ranges",
+      "false_positives": "PowerShell-based management tools, Windows Update via PS, legitimate PS remoting.",
+      "level": "medium",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_powershell.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-015",
+      "title": "Rundll32 Outbound Network Connection",
+      "sysmon_eids": [
+        3
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "System Binary Proxy Execution: Rundll32",
+      "technique_id": "T1218.011",
+      "description": "Detects rundll32.exe initiating outbound network connections \u2014 highly suspicious as rundll32 has no legitimate reason to make external connections except in very specific scenarios.",
+      "key_conditions": "Image ends with rundll32.exe; Initiated=true; DestinationPort in [80,443,4444,8080] or any external IP",
+      "false_positives": "Some Windows system operations (Windows Update, WPAD). Tune by excluding known-good destination IPs.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_rundll32.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-016",
+      "title": "Ngrok Tunnel Network Connection",
+      "sysmon_eids": [
+        3
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Protocol Tunneling",
+      "technique_id": "T1572",
+      "description": "Detects network connections to Ngrok infrastructure (*.ngrok.io, *.ngrok-free.app, tunnel.us.ngrok.com) used to expose internal services or create reverse tunnels for C2.",
+      "key_conditions": "DestinationHostname ends with ngrok.io or ngrok-free.app or contains ngrok; DestinationPort in [443, 4443]",
+      "false_positives": "Legitimate developer use of Ngrok for testing. Rare in enterprise production environments.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_ngrok.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-017",
+      "title": "Suspicious Outbound SMTP Connection",
+      "sysmon_eids": [
+        3
+      ],
+      "tactic": "Exfiltration",
+      "tactic_id": "TA0010",
+      "technique": "Exfiltration Over Alternative Protocol",
+      "technique_id": "T1048.003",
+      "description": "Detects non-mail-client processes making outbound SMTP connections (port 25/465/587) \u2014 indicates data exfiltration via email or spam sending.",
+      "key_conditions": "DestinationPort in [25,465,587]; Image not in known mail clients [outlook.exe, thunderbird.exe]; Initiated=true",
+      "false_positives": "On-premises mail servers, legitimate mail relay services.",
+      "level": "medium",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_susp_smtp.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-018",
+      "title": "Mimikatz SSP DLL Load",
+      "sysmon_eids": [
+        7
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "OS Credential Dumping: LSASS Memory",
+      "technique_id": "T1003.001",
+      "description": "Detects loading of Mimikatz SSP (Security Support Provider) DLLs into LSASS \u2014 mimilib.dll or custom SSP DLLs that log all LSASS authentication events to disk.",
+      "key_conditions": "Image ends with lsass.exe; ImageLoaded contains mimilib.dll or matches unsigned DLL loaded into LSASS from non-system32 path; SignatureStatus not Signed",
+      "false_positives": "Very rare. Legitimate SSP DLLs are always signed Microsoft binaries.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/image_load/image_load_win_mimikatz.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-019",
+      "title": "Credential Dumping DLL Loaded by Non-System Process",
+      "sysmon_eids": [
+        7
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "OS Credential Dumping",
+      "technique_id": "T1003",
+      "description": "Detects credential-related DLLs (wce.dll, wce32.dll, or known dumper DLLs) loaded by unexpected processes.",
+      "key_conditions": "ImageLoaded contains wce.dll, wce32.dll, or matches hash of known credential dumping DLLs; loaded by non-system processes",
+      "false_positives": "Extremely rare legitimate use.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/image_load/image_load_win_susp_dll.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-020",
+      "title": "Injection into LSASS via CreateRemoteThread",
+      "sysmon_eids": [
+        8
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "OS Credential Dumping: LSASS Memory",
+      "technique_id": "T1003.001",
+      "description": "Detects process injection into lsass.exe via CreateRemoteThread \u2014 a primary technique for in-memory credential theft without touching disk.",
+      "key_conditions": "TargetImage ends with lsass.exe; StartModule is null or empty (no backing module \u2014 shellcode injection); SourceImage is not a known security tool",
+      "false_positives": "Some AV/EDR vendors inject into LSASS for monitoring. Build allowlist of known security products.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/create_remote_thread/create_remote_thread_win_lsass.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-021",
+      "title": "CreateRemoteThread into Suspicious Target Process",
+      "sysmon_eids": [
+        8
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Process Injection",
+      "technique_id": "T1055",
+      "description": "Detects injection into browser processes, explorer.exe, or other commonly hollowed targets using CreateRemoteThread. StartModule=null indicates shellcode.",
+      "key_conditions": "TargetImage ends with [explorer.exe, svchost.exe, dllhost.exe, chrome.exe, firefox.exe]; StartModule empty or null; SourceImage not in allowlist",
+      "false_positives": "AV/EDR injection for monitoring. Exclude known security product processes.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/create_remote_thread/create_remote_thread_win_susp_target_processes.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-022",
+      "title": "LSASS Memory Access with Credential Dump Mask",
+      "sysmon_eids": [
+        10
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "OS Credential Dumping: LSASS Memory",
+      "technique_id": "T1003.001",
+      "description": "Detects LSASS process access with GrantedAccess masks characteristic of credential dumpers (Mimikatz, Cobalt Strike, CrackMapExec). High-confidence detection.",
+      "key_conditions": "TargetImage ends with lsass.exe; GrantedAccess in [0x1010, 0x1410, 0x1438, 0x143a, 0x1fffff, 0x1f1fff]; SourceImage not in [known AV/EDR processes]",
+      "false_positives": "AV/EDR monitoring of LSASS. Build tight allowlist for your security stack.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_access/proc_access_win_lsass_access.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-023",
+      "title": "Credential Manager Access via Process Open",
+      "sysmon_eids": [
+        10
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "Credentials from Password Stores",
+      "technique_id": "T1555",
+      "description": "Detects unexpected process access to Credential Manager (vaultcli.dll loaded or vault-related process access), used to steal stored Windows credentials.",
+      "key_conditions": "TargetImage ends with explorer.exe or consent.exe; GrantedAccess has PROCESS_VM_READ; CallTrace contains vaultcli.dll or dpapi.dll",
+      "false_positives": "Legitimate credential backup/restore operations.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_access/proc_access_win_credential_access.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-024",
+      "title": "Executable Created in Suspicious Location",
+      "sysmon_eids": [
+        11
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Masquerading",
+      "technique_id": "T1036",
+      "description": "Detects PE executables (.exe, .dll, .sys) created in high-risk directories: %TEMP%, %APPDATA%, %PUBLIC%, \\ProgramData, \\Users\\Public \u2014 common malware drop locations.",
+      "key_conditions": "TargetFilename ends with .exe or .dll or .sys; TargetFilename starts with C:\\Windows\\Temp or C:\\Users\\*\\AppData\\Local\\Temp or C:\\Users\\Public or C:\\ProgramData",
+      "false_positives": "Some legitimate installers use temp directories. Tune by excluding known software installers.",
+      "level": "medium",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_creation_in_public_folder.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-025",
+      "title": "Startup Folder File Created \u2014 Persistence",
+      "sysmon_eids": [
+        11
+      ],
+      "tactic": "Persistence",
+      "tactic_id": "TA0003",
+      "technique": "Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder",
+      "technique_id": "T1547.001",
+      "description": "Detects file creation in Windows Startup folders \u2014 a simple persistence mechanism that executes files at user logon.",
+      "key_conditions": "TargetFilename contains \\Start Menu\\Programs\\Startup\\ or \\Microsoft\\Windows\\Start Menu\\Programs\\StartUp\\; created by non-installer process",
+      "false_positives": "Legitimate software using startup folder (OneDrive, Teams, etc.). Tune by excluding known-good application paths.",
+      "level": "medium",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_startup_folder_file_write.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-026",
+      "title": "Run Key Persistence \u2014 Registry Modification",
+      "sysmon_eids": [
+        12,
+        13
+      ],
+      "tactic": "Persistence",
+      "tactic_id": "TA0003",
+      "technique": "Registry Run Keys / Startup Folder",
+      "technique_id": "T1547.001",
+      "description": "Detects creation or modification of Run/RunOnce registry keys \u2014 the most common persistence mechanism.",
+      "key_conditions": "TargetObject contains \\CurrentVersion\\Run or \\CurrentVersion\\RunOnce; EventType in [CreateValue, SetValue]; Image not in [msiexec.exe, known installers]",
+      "false_positives": "Software installation commonly writes Run keys. Build an allowlist of known-good values.",
+      "level": "medium",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_runkey_modification.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-027",
+      "title": "WDigest Credential Caching Enabled via Registry",
+      "sysmon_eids": [
+        13
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "OS Credential Dumping: LSASS Memory",
+      "technique_id": "T1003.001",
+      "description": "Detects enabling of WDigest credential caching (UseLogonCredential=1) which forces cleartext password storage in LSASS memory for Mimikatz harvesting.",
+      "key_conditions": "TargetObject contains WDigest\\UseLogonCredential; Details=1 (DWORD value set to 1); EventType=SetValue",
+      "false_positives": "Extremely rare legitimate use. Alert on all occurrences.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_value_set_wdigest.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-028",
+      "title": "IFEO Debugger Persistence or Accessibility Backdoor",
+      "sysmon_eids": [
+        12,
+        13
+      ],
+      "tactic": "Persistence",
+      "tactic_id": "TA0003",
+      "technique": "Image File Execution Options Injection",
+      "technique_id": "T1546.012",
+      "description": "Detects Image File Execution Options Debugger value being set \u2014 used for accessibility backdoors (sethc.exe\u2192cmd.exe) and general process redirect persistence.",
+      "key_conditions": "TargetObject contains Image File Execution Options and Debugger; EventType in [CreateValue, SetValue]; value not pointing to legitimate debugger",
+      "false_positives": "Legitimate debugging configurations by developers.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_image_exe_options.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-029",
+      "title": "Windows Defender Real-Time Protection Disabled",
+      "sysmon_eids": [
+        13
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Impair Defenses: Disable or Modify Tools",
+      "technique_id": "T1562.001",
+      "description": "Detects disabling of Windows Defender real-time protection via registry \u2014 a prerequisite step by ransomware and malware before payload execution.",
+      "key_conditions": "TargetObject contains Windows Defender\\Real-Time Protection\\DisableRealtimeMonitoring; Details=1; or DisableAntiSpyware=1; EventType=SetValue",
+      "false_positives": "Security team testing, managed AV replacement workflows.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_value_set_disable_defender.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-030",
+      "title": "Suspicious Download via Browser \u2014 MOTW Zone.Identifier",
+      "sysmon_eids": [
+        15
+      ],
+      "tactic": "Initial Access",
+      "tactic_id": "TA0001",
+      "technique": "Phishing: Spearphishing Link",
+      "technique_id": "T1566.002",
+      "description": "Detects executable files downloaded via browser with Zone.Identifier ADS, capturing the source URL for phishing investigation. Correlates file hash with threat intel.",
+      "key_conditions": "TargetFilename ends with .exe or .zip or .iso or .lnk; Stream contains Zone.Identifier; Contents includes HostUrl or ReferrerUrl from suspicious domains",
+      "false_positives": "All browser downloads trigger this \u2014 tune by focusing on executable types and suspicious URL patterns.",
+      "level": "low",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_zone_identifier_streams.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-031",
+      "title": "Cobalt Strike Default Named Pipe Patterns",
+      "sysmon_eids": [
+        17,
+        18
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Non-Application Layer Protocol",
+      "technique_id": "T1095",
+      "description": "Detects Cobalt Strike C2 beacon characteristic named pipe patterns used for inter-process communication between beacon stages.",
+      "key_conditions": "PipeName matches patterns: \\\\pipe\\\\msagent_*, \\\\pipe\\\\status_*, \\\\pipe\\\\MSSE-*, \\\\pipe\\\\postex_*, \\\\pipe\\\\postex_ssh_*, \\\\pipe\\\\dce_*, \\\\pipe\\\\mojo_*",
+      "false_positives": "Highly characteristic \u2014 very low false positive rate for Cobalt Strike default configurations.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/pipe_created/pipe_created_win_susp_cobaltstrike_pipe_patterns.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-032",
+      "title": "PsExec Network Pipe Communication",
+      "sysmon_eids": [
+        17,
+        18
+      ],
+      "tactic": "Lateral Movement",
+      "tactic_id": "TA0008",
+      "technique": "Remote Services: SMB/Windows Admin Shares",
+      "technique_id": "T1021.002",
+      "description": "Detects PsExec communication pipes created by the PSEXESVC service on the target machine during remote execution.",
+      "key_conditions": "PipeName matches \\\\PSEXESVC* or \\\\PAExec* or \\\\RemCom*; Image ends with PSEXESVC.exe or services.exe",
+      "false_positives": "Legitimate PsExec use by administrators.",
+      "level": "medium",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/pipe_created/pipe_created_win_psexec.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-033",
+      "title": "WMI Event Subscription \u2014 Fileless Persistence",
+      "sysmon_eids": [
+        19,
+        20,
+        21
+      ],
+      "tactic": "Persistence",
+      "tactic_id": "TA0003",
+      "technique": "Event Triggered Execution: WMI Event Subscription",
+      "technique_id": "T1546.003",
+      "description": "Detects WMI event subscription creation (filter + consumer + binding) used for fileless persistence that survives reboots without touching the filesystem.",
+      "key_conditions": "EID 19: Filter with suspicious trigger (SELECT * FROM Win32_LogonSession, __InstanceCreationEvent); EID 20: CommandLineEventConsumer or ActiveScriptEventConsumer with malicious payload in Destination; EID 21: binding activating the subscription",
+      "false_positives": "Legitimate WMI subscriptions by management software (SCCM). Build an allowlist.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/wmi_event/wmi_event_susp_wmi_filter.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-034",
+      "title": "LOLBin Making Suspicious DNS Query",
+      "sysmon_eids": [
+        22
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Application Layer Protocol: DNS",
+      "technique_id": "T1071.004",
+      "description": "Detects living-off-the-land binaries (certutil, regsvr32, mshta, rundll32, powershell) making DNS queries to external domains \u2014 C2 communication or download cradle.",
+      "key_conditions": "Image in [certutil.exe, regsvr32.exe, mshta.exe, rundll32.exe, powershell.exe]; QueryName not in internal DNS zones; QueryStatus=0 (success)",
+      "false_positives": "Windows Update checking may use PowerShell DNS. Tune by allowlisting known Windows Update domains.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/dns_query/dns_query_win_susp_lolbin.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-035",
+      "title": "DGA Domain Query \u2014 High-Entropy Domain Name",
+      "sysmon_eids": [
+        22
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Dynamic Resolution: Domain Generation Algorithms",
+      "technique_id": "T1568.002",
+      "description": "Detects DNS queries to high-entropy domain names characteristic of Domain Generation Algorithm (DGA) C2 \u2014 random-looking subdomains that are hard to blocklist.",
+      "key_conditions": "QueryName has high character entropy (Shannon entropy > 3.5) or matches DGA patterns (long random subdomain, many numeric chars); multiple rapid queries to different high-entropy domains",
+      "false_positives": "Some CDN domains have high entropy. Tune with legitimate CDN/cloud domain allowlist.",
+      "level": "medium",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/dns_query/dns_query_win_susp_dga.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-036",
+      "title": "Vulnerable Driver Loaded (LOLDrivers / BYOVD)",
+      "sysmon_eids": [
+        6
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Exploit Public-Facing Application / Kernel Driver",
+      "technique_id": "T1014",
+      "description": "Detects loading of known vulnerable or malicious drivers used in Bring Your Own Vulnerable Driver (BYOVD) attacks to disable security tools or gain ring-0 access.",
+      "key_conditions": "ImageLoaded hash matches known vulnerable driver hashes from loldrivers.io; or Signed=false; or SignatureStatus=revoked; or driver loaded from suspicious path",
+      "false_positives": "Legitimate but outdated signed drivers \u2014 validate against loldrivers.io blocklist.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/driver_load/driver_load_win_vuln_drivers.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-037",
+      "title": "Unsigned or Revoked Driver Loaded",
+      "sysmon_eids": [
+        6
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Rootkit",
+      "technique_id": "T1014",
+      "description": "Detects loading of unsigned or revoked-signature kernel drivers \u2014 rootkits and malicious drivers are either unsigned or use stolen/revoked certificates.",
+      "key_conditions": "Signed=false or SignatureStatus=revoked or SignatureStatus=errorCode_endpoint; driver not in known-good driver allowlist",
+      "false_positives": "Older legitimate drivers may lack signatures. Build allowlist of known-good unsigned drivers.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/driver_load/driver_load_win_unsigned_driver.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-038",
+      "title": "Process Hollowing or Herpaderping Detected",
+      "sysmon_eids": [
+        25
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Process Injection: Process Hollowing",
+      "technique_id": "T1055.012",
+      "description": "Detects process image manipulation: hollowing (replacing legitimate process memory with malicious code) or herpaderping (modifying file after process creation). Sysmon natively detects both.",
+      "key_conditions": "EventID=25; Type in ['Image is replaced','Image is locked for access']; any process \u2014 near-zero legitimate rate",
+      "false_positives": "Extremely rare. Some older software protection schemes may trigger herpaderping detection.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_tampering/proc_tampering_win_process_image_tamper.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-039",
+      "title": "Raw Volume Read \u2014 Credential File Access",
+      "sysmon_eids": [
+        9
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "OS Credential Dumping: NTDS",
+      "technique_id": "T1003.003",
+      "description": "Detects raw disk volume reads by non-backup processes \u2014 used to access locked credential files (NTDS.dit, SAM hive, SECURITY hive) without triggering file system auditing.",
+      "key_conditions": "Device contains PhysicalDrive or HarddiskVolume; Image not in [known backup tools]; Image not System",
+      "false_positives": "Backup software, disk analysis tools. Build tight allowlist.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/raw_access_thread/rawaccess_win_rawaccess_volume_read.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-040",
+      "title": "Sysmon Service Stopped or Config Modified",
+      "sysmon_eids": [
+        4,
+        16
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Impair Defenses: Disable or Modify Tools",
+      "technique_id": "T1562.001",
+      "description": "Detects Sysmon service being stopped (EID 4, State=Stopped) or configuration modified unexpectedly (EID 16). Attackers stop or reconfigure Sysmon to blind monitoring.",
+      "key_conditions": "EID 4 with State=Stopped (outside of scheduled maintenance windows); or EID 16 during unexpected time periods or by unexpected accounts",
+      "false_positives": "Planned Sysmon maintenance, configuration updates by security team. Suppress during known change windows.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/other/win_sysmon_driver_unload.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-041",
+      "title": "Cloudflared Tunnel \u2014 C2 or Data Exfiltration via Cloudflare",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Protocol Tunneling",
+      "technique_id": "T1572",
+      "description": "Detects execution of Cloudflared, the Cloudflare tunnel client, which attackers use to expose internal services or create persistent reverse tunnels. Observed in multiple ransomware intrusions (LockBit, Play) as an alternative to Ngrok.",
+      "key_conditions": "Image ends with cloudflared.exe or OriginalFileName=cloudflared.exe; CommandLine contains tunnel or --url or access",
+      "false_positives": "Legitimate Cloudflare Tunnel deployments in organizations using Cloudflare Zero Trust.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_cloudflared_tunnel_run.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-042",
+      "title": "Impacket Lateral Movement Tool Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Lateral Movement",
+      "tactic_id": "TA0008",
+      "technique": "Remote Services",
+      "technique_id": "T1021",
+      "description": "Detects execution of compiled Impacket tools (wmiexec, smbexec, atexec, dcomexec, secretsdump) by filename pattern or characteristic command-line arguments. The /Q /c echo pattern is signature Impacket wmiexec output redirection.",
+      "key_conditions": "Image name contains impacket or wmiexec or smbexec or atexec or dcomexec; or CommandLine contains /Q /c echo and \\\\127.0.0.1\\ or C$\\\\__output; or ParentImage=wmiprvse.exe with cmd.exe child and echo redirect",
+      "false_positives": "Authorized red team operations. The /Q /c echo pattern is highly characteristic.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_hktl_impacket_lateral_movement.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-043",
+      "title": "AdFind Active Directory Reconnaissance",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Discovery",
+      "tactic_id": "TA0007",
+      "technique": "Domain Trust Discovery",
+      "technique_id": "T1482",
+      "description": "Detects AdFind execution \u2014 a single-binary AD query tool that is a signature tool in Conti, LockBit, and Ryuk pre-ransomware reconnaissance. Detected by filename, OriginalFileName, or characteristic command-line flags.",
+      "key_conditions": "Image ends with adfind.exe or AdFind.exe; or CommandLine contains -f objectcategory or -sc dclist or -subt or -csv; or OriginalFileName=adfind.exe",
+      "false_positives": "Authorized AD administrators using AdFind for legitimate queries.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_hktl_adfind_susp_usage.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-044",
+      "title": "SDelete Secure File Deletion \u2014 Anti-Forensics",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Indicator Removal: File Deletion",
+      "technique_id": "T1070.004",
+      "description": "Detects SDelete (Sysinternals) execution used by attackers to securely delete files and prevent recovery. Ransomware groups use SDelete post-encryption to destroy backups and forensic evidence.",
+      "key_conditions": "Image ends with sdelete.exe or sdelete64.exe; or OriginalFileName=sdelete.exe; CommandLine contains -p (overwrite passes) or -s (recursive) or *.* targeting directories",
+      "false_positives": "Legitimate secure file deletion by administrators (should be rare and documented).",
+      "level": "medium",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_sysinternals_sdelete.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-045",
+      "title": "WMIC Remote Process Creation \u2014 Lateral Movement",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Lateral Movement",
+      "tactic_id": "TA0008",
+      "technique": "Windows Management Instrumentation",
+      "technique_id": "T1047",
+      "description": "Detects WMIC used for remote process creation \u2014 a classic lateral movement technique. CommandLine includes node: (remote target), process call create, and a payload command.",
+      "key_conditions": "Image ends with wmic.exe; CommandLine contains /node: and process and call and create; or CommandLine contains process call create with suspicious payload (powershell, cmd, cscript)",
+      "false_positives": "Legitimate WMIC-based remote management by IT operations.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_wmic_remote_command.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-046",
+      "title": "Network Reconnaissance via Built-in Tools",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Discovery",
+      "tactic_id": "TA0007",
+      "technique": "Network Service Discovery",
+      "technique_id": "T1046",
+      "description": "Detects rapid sequential execution of native Windows network reconnaissance tools (net.exe, netstat, ipconfig, arp, nslookup, ping) \u2014 a pattern consistent with post-exploitation situational awareness.",
+      "key_conditions": "Image in [net.exe, net1.exe, netstat.exe, ipconfig.exe, arp.exe, nslookup.exe, ping.exe, tracert.exe, route.exe]; multiple distinct executions within short time window from same parent process",
+      "false_positives": "Legitimate admin network troubleshooting. Alert on burst patterns (5+ tools in <60 seconds).",
+      "level": "medium",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_net_network_recon.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-047",
+      "title": "Shadow Copy Deletion \u2014 Ransomware Preparation",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Impact",
+      "tactic_id": "TA0040",
+      "technique": "Inhibit System Recovery",
+      "technique_id": "T1490",
+      "description": "Detects Volume Shadow Copy deletion via vssadmin, wmic, or PowerShell \u2014 the single most reliable pre-ransomware indicator. Nearly every ransomware family deletes VSS copies before encryption.",
+      "key_conditions": "Image ends with vssadmin.exe with CommandLine contains delete shadows; or wmic.exe with shadowcopy and delete; or powershell.exe with Get-WmiObject Win32_ShadowCopy and .Delete(); or bcdedit with recoveryenabled no or ignoreallfailures",
+      "false_positives": "Legitimate backup rotation scripts. In most enterprise environments VSS deletion should require change control.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_vssadmin_delete_shadows.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-048",
+      "title": "Chisel Reverse Proxy Tunnel Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Protocol Tunneling",
+      "technique_id": "T1572",
+      "description": "Detects Chisel TCP/UDP tunnel execution. Chisel is a Go binary used by attackers for port forwarding and SOCKS proxy chains through firewalls. Often renamed but Go binary signatures are detectable.",
+      "key_conditions": "Image name contains chisel; or CommandLine contains client and R:socks or R:0.0.0.0 or server --port; or OriginalFileName=chisel (Go binary metadata)",
+      "false_positives": "Legitimate network tunneling for development environments. Rare in enterprise production.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_hktl_chisel_execution.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-049",
+      "title": "Procdump LSASS Memory Dump",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "OS Credential Dumping: LSASS Memory",
+      "technique_id": "T1003.001",
+      "description": "Detects ProcDump (Sysinternals) targeting LSASS process for memory dumping \u2014 a common credential theft technique that abuses a legitimate signed tool to evade AV.",
+      "key_conditions": "Image ends with procdump.exe or procdump64.exe; CommandLine contains lsass; or CommandLine contains -ma and (lsass or process ID of lsass); or OriginalFileName=procdump",
+      "false_positives": "Legitimate debugging of LSASS by support engineers \u2014 extremely rare and should be via ticket.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_sysinternals_procdump_lsass.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-050",
+      "title": "Suspicious Execution from Recycle Bin or Temp",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Masquerading",
+      "technique_id": "T1036",
+      "description": "Detects process execution from highly suspicious locations: Recycle Bin ($Recycle.Bin), Windows Temp, system32 temp, or user temp directories. Malware frequently executes from these paths to evade detection.",
+      "key_conditions": "Image contains $Recycle.Bin or \\Recycler\\ or C:\\Windows\\Temp\\ or \\AppData\\Local\\Temp\\ and file extension is .exe or .dll; CommandLine or Image path indicates temp-based execution",
+      "false_positives": "Some legitimate installers extract to and execute from temp. Tune by excluding known software updaters.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_execution_path.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-051",
+      "title": "Lateral Movement via Copy to Admin Share + Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Lateral Movement",
+      "tactic_id": "TA0008",
+      "technique": "SMB/Windows Admin Shares",
+      "technique_id": "T1021.002",
+      "description": "Detects the classic lateral movement pattern: copying an executable to a remote admin share followed by remote execution via sc.exe, psexec, or AT command \u2014 characteristic of ransomware operators and red teams.",
+      "key_conditions": "CommandLine contains copy and \\\\<target>\\C$ or \\\\<target>\\ADMIN$; or cmd.exe with copy and net use pattern; followed by sc.exe or schtasks creating remote task",
+      "false_positives": "Legitimate software deployment via admin shares (SCCM, PDQ Deploy).",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_copy_lateral_movement.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-052",
+      "title": "PowerShell Disable Defender via Set-MpPreference",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Impair Defenses: Disable or Modify Tools",
+      "technique_id": "T1562.001",
+      "description": "Detects PowerShell commands disabling Windows Defender features via Set-MpPreference \u2014 used by ransomware and malware to disable real-time protection before payload execution.",
+      "key_conditions": "Image ends with powershell.exe or pwsh.exe; CommandLine contains Set-MpPreference and (DisableRealtimeMonitoring or DisableIOAVProtection or DisableBehaviorMonitoring or ExclusionPath or ExclusionProcess) with $true or 1",
+      "false_positives": "Security team testing, managed AV replacement procedures.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_powershell_defender_disable_feature.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-053",
+      "title": "Rclone Cloud Sync \u2014 Potential Data Exfiltration",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Exfiltration",
+      "tactic_id": "TA0010",
+      "technique": "Exfiltration to Cloud Storage",
+      "technique_id": "T1567.002",
+      "description": "Detects Rclone execution used for exfiltrating data to cloud storage (MEGA, Dropbox, S3, Google Drive). Heavily used by ransomware operators (Scattered Spider, ALPHV, Cl0p) for large-volume exfiltration.",
+      "key_conditions": "Image ends with rclone.exe or OriginalFileName=rclone.exe; CommandLine contains copy or sync or move with remote: pattern; or CommandLine contains --config and cloud provider flags (mega, s3, gdrive)",
+      "false_positives": "Legitimate IT use of Rclone for cloud backup. Alert on non-standard config files and unusual destination remotes.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_rclone_execution.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-054",
+      "title": "Suspicious High-Risk Port Outbound \u2014 C2 Beaconing",
+      "sysmon_eids": [
+        3
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Non-Standard Port",
+      "technique_id": "T1571",
+      "description": "Detects processes making outbound connections on non-standard high-risk ports commonly used by C2 frameworks: 4444 (Metasploit default), 4445, 1337, 8888, 9999, 6666, 50050 (Cobalt Strike teamserver).",
+      "key_conditions": "Initiated=true; DestinationPort in [4444,4445,1337,8888,9999,6666,6667,50050,55553]; Image not in known-good processes making these connections",
+      "false_positives": "Development environments using these ports. Tune by IP range \u2014 alert specifically on external IPs.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_susp_ports.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-055",
+      "title": "Non-Browser Process Connecting to File Sharing Service",
+      "sysmon_eids": [
+        3
+      ],
+      "tactic": "Exfiltration",
+      "tactic_id": "TA0010",
+      "technique": "Exfiltration to Cloud Storage",
+      "technique_id": "T1567.002",
+      "description": "Detects non-browser processes making connections to file sharing and cloud storage services (MEGA, WeTransfer, Dropbox, Google Drive, paste sites) that may indicate data exfiltration.",
+      "key_conditions": "Initiated=true; DestinationHostname ends with mega.nz or mega.io or wetransfer.com or paste.ee or pastebin.com or file.io or transfer.sh; Image not in [chrome.exe, firefox.exe, msedge.exe, brave.exe]",
+      "false_positives": "Enterprise sync clients. Tune by including expected sync tool processes in allowlist.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_susp_file_sharing_domains.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-056",
+      "title": "Cobalt Strike Default Network Indicators",
+      "sysmon_eids": [
+        3
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Web Protocols",
+      "technique_id": "T1071.001",
+      "description": "Detects Cobalt Strike C2 network characteristics: connections on port 443/80 from unusual processes with beacon-like jitter intervals, or connections to known Cobalt Strike team server certificates.",
+      "key_conditions": "Image in [svchost.exe, rundll32.exe, dllhost.exe, regsvr32.exe, mshta.exe]; Initiated=true; DestinationPort in [80,443,8080,8443]; DestinationHostname not in known CDN/update domains",
+      "false_positives": "Windows system processes occasionally make legitimate HTTP connections. Build tight allowlist of expected destinations.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_susp_outbound_connection.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-057",
+      "title": "DNS-over-HTTPS by Non-Browser \u2014 C2 Evasion",
+      "sysmon_eids": [
+        3
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Application Layer Protocol: DNS",
+      "technique_id": "T1071.004",
+      "description": "Detects non-browser processes connecting to known DNS-over-HTTPS (DoH) providers (Cloudflare 1.1.1.1, Google 8.8.8.8, Quad9) on port 443 \u2014 used by malware to bypass DNS monitoring and resolve C2 domains without hitting corporate DNS.",
+      "key_conditions": "Initiated=true; DestinationIp in [1.1.1.1, 1.0.0.1, 8.8.8.8, 8.8.4.4, 9.9.9.9, 149.112.112.112, 94.140.14.14]; DestinationPort=443; Image not in [chrome.exe, firefox.exe, msedge.exe, brave.exe]",
+      "false_positives": "Some applications with built-in DoH support. Tune by process allowlist.",
+      "level": "medium",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_dns_over_https.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-058",
+      "title": "Suspicious DLL Loaded from AppData or Temp",
+      "sysmon_eids": [
+        7
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "DLL Side-Loading",
+      "technique_id": "T1574.002",
+      "description": "Detects DLL loading from user-writable high-risk paths (AppData, Temp, Downloads, Public) into processes \u2014 indicative of DLL hijacking or side-loading to execute malicious code.",
+      "key_conditions": "ImageLoaded starts with C:\\Users\\ and contains \\AppData\\ or \\Temp\\ or \\Downloads\\; or starts with C:\\ProgramData\\; file extension is .dll; Signed=false or from unexpected process",
+      "false_positives": "Some legitimate applications install DLLs in AppData. Build hash-based allowlist for known-good DLLs.",
+      "level": "medium",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/image_load/image_load_win_susp_dll_load.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-059",
+      "title": "DLL Loaded by Signed Binary with Unsigned DLL \u2014 Hijack",
+      "sysmon_eids": [
+        7
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Hijack Execution Flow: DLL Search Order",
+      "technique_id": "T1574.001",
+      "description": "Detects when a trusted signed Windows binary loads an unsigned DLL from a non-standard path \u2014 the signature of DLL search-order hijacking where malicious DLLs are placed alongside legitimate executables.",
+      "key_conditions": "Image is a signed Microsoft/system binary; ImageLoaded path is NOT in C:\\Windows\\System32\\ or C:\\Windows\\SysWOW64\\; Signed=false or SignatureStatus != Valid",
+      "false_positives": "Some legitimate third-party software bundles unsigned DLLs with signed executables. Build path+process allowlist.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/image_load/image_load_win_dll_sideloading.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-060",
+      "title": "PowerShell Reflection \u2014 In-Memory Assembly Load",
+      "sysmon_eids": [
+        7
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Reflective Code Loading",
+      "technique_id": "T1620",
+      "description": "Detects PowerShell loading .NET assemblies reflectively (Invoke-ReflectivePEInjection, [System.Reflection.Assembly]::Load) \u2014 used to execute Mimikatz, Rubeus, and other tools entirely in memory without touching disk.",
+      "key_conditions": "Image ends with powershell.exe or pwsh.exe; ImageLoaded path starts with C:\\Windows\\assembly\\NativeImages or appears as a memory-backed module with no disk path",
+      "false_positives": "Legitimate PowerShell modules loaded in-process. Focus on unsigned in-memory assemblies.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/image_load/image_load_win_powershell_susp_assembly.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-061",
+      "title": "Suspicious Parent-Child Injection via CreateRemoteThread",
+      "sysmon_eids": [
+        8
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Process Injection",
+      "technique_id": "T1055",
+      "description": "Detects injection from scripting engines (wscript, cscript, mshta, powershell) into system processes (svchost, taskhost, explorer) via CreateRemoteThread \u2014 characteristic of script-based malware pivoting to a persistent process.",
+      "key_conditions": "SourceImage ends with [wscript.exe, cscript.exe, mshta.exe, powershell.exe, cmd.exe]; TargetImage ends with [svchost.exe, taskhost.exe, explorer.exe, dllhost.exe]; StartModule empty",
+      "false_positives": "Rare. Some monitoring tools may inject via scripts into system processes.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/create_remote_thread/create_remote_thread_win_susp_source_image.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-062",
+      "title": "Token Impersonation via Process Open \u2014 Privilege Escalation",
+      "sysmon_eids": [
+        10
+      ],
+      "tactic": "Privilege Escalation",
+      "tactic_id": "TA0004",
+      "technique": "Access Token Manipulation",
+      "technique_id": "T1134.001",
+      "description": "Detects process access with PROCESS_DUP_HANDLE (0x40) or PROCESS_QUERY_INFORMATION access rights targeting high-privilege processes \u2014 used for token impersonation/theft to escalate privileges.",
+      "key_conditions": "GrantedAccess contains 0x40 (PROCESS_DUP_HANDLE) or 0x400 (PROCESS_QUERY_INFORMATION); TargetImage in [lsass.exe, winlogon.exe, services.exe]; SourceImage is unexpected non-system process",
+      "false_positives": "Security tools and debuggers legitimately query process information. Build allowlist.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_access/proc_access_win_susp_proc_access.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-063",
+      "title": "LNK File Created in Suspicious Location",
+      "sysmon_eids": [
+        11
+      ],
+      "tactic": "Persistence",
+      "tactic_id": "TA0003",
+      "technique": "Shortcut Modification",
+      "technique_id": "T1547.009",
+      "description": "Detects LNK (shortcut) file creation in startup folders, desktop, or suspicious temp locations \u2014 used for persistence or as a delivery mechanism (ISO-based phishing drops LNK that executes payload).",
+      "key_conditions": "TargetFilename ends with .lnk; location is Startup folder or Desktop or \\Temp\\ or \\AppData\\; created by unexpected process (not Windows Explorer, known apps)",
+      "false_positives": "Application installation creating legitimate shortcuts. Focus on temp-path LNK creation.",
+      "level": "medium",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_lnk_creation.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-064",
+      "title": "Office Application Writing Executable to Disk",
+      "sysmon_eids": [
+        11
+      ],
+      "tactic": "Initial Access",
+      "tactic_id": "TA0001",
+      "technique": "Phishing: Spearphishing Attachment",
+      "technique_id": "T1566.001",
+      "description": "Detects Office applications (Word, Excel, PowerPoint, Outlook) writing PE executables (.exe, .dll) to disk \u2014 a clear indicator of macro-based malware dropper activity.",
+      "key_conditions": "Image ends with WINWORD.EXE or EXCEL.EXE or POWERPNT.EXE or OUTLOOK.EXE; TargetFilename ends with .exe or .dll or .sys or .ps1 or .vbs or .js; TargetFilename NOT in known legitimate Office plugin paths",
+      "false_positives": "Office add-ins that install components \u2014 very rare and should be allowlisted.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_office_macro_file_drop.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-065",
+      "title": "Script File Written to Windows Directory",
+      "sysmon_eids": [
+        11
+      ],
+      "tactic": "Persistence",
+      "tactic_id": "TA0003",
+      "technique": "Boot or Logon Autostart Execution",
+      "technique_id": "T1547",
+      "description": "Detects script files (PowerShell, batch, VBScript, JScript) being written directly into C:\\Windows\\ or C:\\Windows\\System32\\ \u2014 attackers place scripts here to abuse the trusted path and avoid detection.",
+      "key_conditions": "TargetFilename starts with C:\\Windows\\ and ends with .ps1 or .bat or .cmd or .vbs or .js or .hta; Image not in [msiexec.exe, TrustedInstaller.exe, System]",
+      "false_positives": "Windows updates occasionally place scripts here. Tune by excluding TrustedInstaller and SYSTEM write operations.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_script_file_creation_windows_dir.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-066",
+      "title": "Windows Defender Exclusion Path Added",
+      "sysmon_eids": [
+        12,
+        13
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Impair Defenses: Disable or Modify Tools",
+      "technique_id": "T1562.001",
+      "description": "Detects addition of exclusion paths or processes to Windows Defender via registry \u2014 attackers add the directory containing their tools to Defender exclusions before dropping payloads.",
+      "key_conditions": "TargetObject contains Windows Defender\\Exclusions\\Paths or Exclusions\\Processes or Exclusions\\Extensions; EventType in [CreateValue, SetValue]; Image not in [MsMpEng.exe, known AV management tools]",
+      "false_positives": "Legitimate AV exclusions configured by security team or via GPO. Alert on process context.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_windows_defender_exclusions.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-067",
+      "title": "UAC Disabled via Registry \u2014 EnableLUA=0",
+      "sysmon_eids": [
+        13
+      ],
+      "tactic": "Privilege Escalation",
+      "tactic_id": "TA0004",
+      "technique": "Bypass User Account Control",
+      "technique_id": "T1548.002",
+      "description": "Detects disabling of User Account Control (UAC) by setting EnableLUA=0 in registry \u2014 removes the primary elevation control mechanism, allowing silent privilege escalation.",
+      "key_conditions": "TargetObject contains Policies\\System\\EnableLUA; Details=0 (DWORD); EventType=SetValue",
+      "false_positives": "Misconfigured enterprise deployments. Alert on all occurrences \u2014 EnableLUA should always be 1.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_uac_disabled.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-068",
+      "title": "Suspicious AutoRun Registry Key in Uncommon Path",
+      "sysmon_eids": [
+        12,
+        13
+      ],
+      "tactic": "Persistence",
+      "tactic_id": "TA0003",
+      "technique": "Boot or Logon Autostart Execution",
+      "technique_id": "T1547.001",
+      "description": "Detects autostart registry value pointing to executables in unusual locations (temp, appdata, programdata, recycle bin) rather than Program Files \u2014 a key persistence IOC.",
+      "key_conditions": "TargetObject contains \\CurrentVersion\\Run; Details (value data) contains \\Temp\\ or \\AppData\\ or \\ProgramData\\ or $Recycle or \\Users\\Public; EventType=SetValue",
+      "false_positives": "Some legitimate applications install Run entries pointing to AppData (OneDrive, Dropbox). Tune by value name.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_runkey_susp_path.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-069",
+      "title": "Service Registry Key Modified \u2014 Potential Hijack",
+      "sysmon_eids": [
+        12,
+        13
+      ],
+      "tactic": "Persistence",
+      "tactic_id": "TA0003",
+      "technique": "Create or Modify System Process: Windows Service",
+      "technique_id": "T1543.003",
+      "description": "Detects modification of a Windows service's ImagePath registry value \u2014 used to hijack existing legitimate services by redirecting to malicious binaries, or to plant new malicious services.",
+      "key_conditions": "TargetObject contains HKLM\\System\\CurrentControlSet\\Services\\ and ImagePath; EventType=SetValue; new ImagePath value points to unusual directory or contains powershell/cmd embedded commands; Image not msiexec.exe or sc.exe",
+      "false_positives": "Legitimate service installation and update. Alert on ImagePath values pointing outside Program Files or Windows.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_service_imagepath_change.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-070",
+      "title": "File Timestamp Modified \u2014 Timestomping",
+      "sysmon_eids": [
+        2
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Indicator Removal: Timestomp",
+      "technique_id": "T1070.006",
+      "description": "Detects file creation time modification (timestomping) \u2014 attackers change file timestamps to match system files or predate the intrusion to confuse forensic timeline analysis.",
+      "key_conditions": "EventID=2; Image not in [known legitimate timestamping tools: robocopy.exe, xcopy.exe, backup software]; PreviousCreationUtcTime differs significantly from CreationUtcTime (e.g., changed to pre-2010 or future date)",
+      "false_positives": "File sync and backup tools legitimately modify timestamps. Focus on PE files and executables modified by unexpected processes.",
+      "level": "medium",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_creation_time_change.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-071",
+      "title": "Malware Backdating Timestamp to System File Era",
+      "sysmon_eids": [
+        2
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Indicator Removal: Timestomp",
+      "technique_id": "T1070.006",
+      "description": "Detects timestomping where an attacker sets a file's creation time to match a known Windows OS release date \u2014 a specific APT technique to make backdoors appear to be original system files.",
+      "key_conditions": "EventID=2; CreationUtcTime matches Windows OS release dates (e.g., 2009-07-14 for Win7, 2012-07-26 for Win8, 2015-07-29 for Win10) within a short date range; TargetFilename ends with .exe or .dll",
+      "false_positives": "Extremely rare legitimate use case.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_os_timestamp.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-072",
+      "title": "ISO or IMG File Download \u2014 MOTW Bypass Container",
+      "sysmon_eids": [
+        15
+      ],
+      "tactic": "Initial Access",
+      "tactic_id": "TA0001",
+      "technique": "Phishing: Spearphishing Attachment",
+      "technique_id": "T1566.001",
+      "description": "Detects download of ISO or IMG disk image files which attackers use to deliver payloads while bypassing Mark of the Web propagation (files inside ISO do not inherit Zone.Identifier from the container).",
+      "key_conditions": "TargetFilename ends with .iso or .img or .vhd or .vhdx; Stream=Zone.Identifier with ZoneId=3 (Internet); Image is browser or mail client",
+      "false_positives": "Legitimate ISO downloads for software installation. Alert on combined with suspicious URL patterns.",
+      "level": "medium",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_iso_file_download.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-073",
+      "title": "Suspicious File Downloaded from Paste or File Sharing Site",
+      "sysmon_eids": [
+        15
+      ],
+      "tactic": "Initial Access",
+      "tactic_id": "TA0001",
+      "technique": "Phishing: Spearphishing Link",
+      "technique_id": "T1566.002",
+      "description": "Detects executable or script files downloaded from paste/file sharing sites (pastebin, paste.ee, file.io, transfer.sh, raw.githubusercontent abused) \u2014 common payload delivery infrastructure.",
+      "key_conditions": "TargetFilename ends with .exe or .ps1 or .bat or .hta or .vbs or .js; Zone.Identifier Contents/HostUrl contains pastebin.com or paste.ee or file.io or transfer.sh or hastebin.com",
+      "false_positives": "Developers downloading legitimate scripts from GitHub gists or pastebin. Tune by executable file type focus.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_download_via_browser.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-074",
+      "title": "Sliver or Brute Ratel C2 DNS Beacon Patterns",
+      "sysmon_eids": [
+        22
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Domain Generation Algorithms",
+      "technique_id": "T1568.002",
+      "description": "Detects DNS query patterns characteristic of Sliver C2 (random-looking subdomains, mTLS certificates) and Brute Ratel (characteristic DNS patterns). These frameworks generate DNS queries with high entropy subdomains.",
+      "key_conditions": "QueryName has high entropy subdomains (>3.5 Shannon entropy); or QueryName structure matches known Sliver patterns (random 8-12 char subdomain under attacker domain); rapid sequential queries to same base domain",
+      "false_positives": "Some CDNs generate high-entropy subdomains. Correlate with process and network context.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/dns_query/dns_query_win_susp_dga.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-075",
+      "title": "Suspicious DNS Query to Newly Registered or Typosquatted Domain",
+      "sysmon_eids": [
+        22
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Domain Fronting",
+      "technique_id": "T1090.004",
+      "description": "Detects DNS queries to domains matching known typosquatting patterns (microsoft-update.com, windowsupdate.net, etc.) or queries from processes that should never make external DNS queries.",
+      "key_conditions": "QueryName matches typosquatting patterns for common enterprise domains; or QueryName resolves to recently registered domain (TTI integration needed); Image in [wmic.exe, regsvr32.exe, rundll32.exe, mshta.exe]",
+      "false_positives": "Low \u2014 process-specific filtering keeps FP rate manageable.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/dns_query/dns_query_win_susp_malware_domains.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-076",
+      "title": "Ransomware Mass File Deletion Pattern",
+      "sysmon_eids": [
+        23,
+        26
+      ],
+      "tactic": "Impact",
+      "tactic_id": "TA0040",
+      "technique": "Data Destruction",
+      "technique_id": "T1485",
+      "description": "Detects high-volume file deletion events characteristic of ransomware wiping original files post-encryption or a wiper malware destroying data. Alert on >100 file deletions per minute from a single process.",
+      "key_conditions": "EID 23 or 26; high volume of events from single ProcessGuid within short time window; TargetFilename extensions are common document types (.docx, .xlsx, .pdf, .jpg) being deleted in bulk",
+      "false_positives": "Legitimate bulk file cleanup operations. Alert on rate threshold combined with diverse file type coverage.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_delete_win_delete_shadow_volume.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-077",
+      "title": "Tool Cleanup \u2014 Attacker Deleting Own Executables",
+      "sysmon_eids": [
+        23,
+        26
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Indicator Removal: File Deletion",
+      "technique_id": "T1070.004",
+      "description": "Detects attackers deleting their own tools after use \u2014 IsExecutable=true in file deletion events from temp/appdata, combined with the deleting process being cmd.exe or PowerShell, is a strong post-exploitation cleanup IOC.",
+      "key_conditions": "EID 23 or 26; IsExecutable=true; TargetFilename path is \\Temp\\ or \\AppData\\ or \\ProgramData\\ or \\Downloads\\; Image in [cmd.exe, powershell.exe, wscript.exe]",
+      "false_positives": "Installers cleaning up temp executables after installation. Focus on temp-path PE deletions by scripting engines.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_delete_win_susp_file_deletion.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-078",
+      "title": "PE File Created in Temp by Unexpected Process",
+      "sysmon_eids": [
+        29
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Masquerading",
+      "technique_id": "T1036",
+      "description": "Detects new PE executable files created in temp/appdata directories by non-installer processes (EID 29 is PE-specific, lower noise than EID 11). Dropped executables in these paths indicate initial access payload staging.",
+      "key_conditions": "EventID=29; TargetFilename in \\Temp\\ or \\AppData\\ or \\ProgramData\\ or \\Downloads\\; Image not in [msiexec.exe, setup.exe, unzip.exe, 7z.exe, known updaters]",
+      "false_positives": "Software updaters and installers extract executables to temp. Build process-based allowlist.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_creation_in_temp_folder.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-079",
+      "title": "PE File Written by Browser or Mail Client",
+      "sysmon_eids": [
+        29
+      ],
+      "tactic": "Initial Access",
+      "tactic_id": "TA0001",
+      "technique": "User Execution: Malicious File",
+      "technique_id": "T1204.002",
+      "description": "Detects PE executable files written to disk by web browsers or mail clients (EID 29 \u2014 PE-specific detection) \u2014 a reliable indicator of file-based phishing delivery or drive-by download.",
+      "key_conditions": "EventID=29; Image ends with [chrome.exe, firefox.exe, msedge.exe, brave.exe, OUTLOOK.EXE, thunderbird.exe]; TargetFilename ends with .exe or .dll (PE files written by browser/mail)",
+      "false_positives": "Legitimate software downloaded through browser. Correlate with EID 15 Zone.Identifier for source URL.",
+      "level": "high",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_pe_drop_by_browser.yml",
+      "curated": true
+    },
+    {
+      "id": "SYS-080",
+      "title": "Raw Disk Read by Script or Office Process",
+      "sysmon_eids": [
+        9
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "OS Credential Dumping",
+      "technique_id": "T1003",
+      "description": "Detects raw physical disk reads from scripting engines or Office applications \u2014 much more suspicious than raw reads from dedicated tools. Indicates a script-embedded credential harvester.",
+      "key_conditions": "Device contains PhysicalDrive or HarddiskVolumeShadowCopy; Image ends with [powershell.exe, wscript.exe, cscript.exe, WINWORD.EXE, EXCEL.EXE, mshta.exe]",
+      "false_positives": "Essentially no legitimate use case for Office or PowerShell to perform raw disk reads.",
+      "level": "critical",
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/raw_access_thread/rawaccess_win_susp_script.yml",
+      "curated": true
+    },
+    {
+      "id": "DB-001",
+      "title": "AbusedDebugPrivilege by Arbitrary Parent Processes",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Privilege Escalation",
+      "tactic_id": "TA0004",
+      "technique": "Abuse Elevation Control Mechanism",
+      "technique_id": "T1548",
+      "description": "Detects unusual child processes from system processes that normally don't spawn children. Indicates debug privilege abuse for arbitrary parent spoofing.",
+      "key_conditions": "ParentImage in [fontdrvhost.exe,spoolsv.exe,csrss.exe] spawning unexpected child processes not normal for that parent",
+      "false_positives": "Rare legitimate use cases with custom system software",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_abusing_debug_privilege.yml"
+    },
+    {
+      "id": "DB-002",
+      "title": "AddinUtil.EXE Execution From Uncommon Directory",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution",
+      "technique_id": "T1218",
+      "description": "Detects execution of AddInutil.exe (Add-In deployment cache updater) from non-standard directory \u2014 used as LOLBIN to execute arbitrary code.",
+      "key_conditions": "Image ends with AddInutil.exe; CurrentDirectory or CommandLine path not in standard Windows directories",
+      "false_positives": "Legitimate .NET framework operations",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_addinutil_uncommon_dir_exec.yml"
+    },
+    {
+      "id": "DB-003",
+      "title": "AgentExecutor PowerShell Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution",
+      "technique_id": "T1218",
+      "description": "Detects abuse of AgentExecutor.exe to run PowerShell with ExecutionPolicy Bypass or arbitrary binaries named powershell.exe.",
+      "key_conditions": "Image ends with AgentExecutor.exe; CommandLine contains powershell or script path",
+      "false_positives": "Legitimate Intune management agent operations",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_agentexecutor_potential_abuse.yml"
+    },
+    {
+      "id": "DB-004",
+      "title": "Arbitrary File Download Via IMEWDBLD.EXE",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution",
+      "technique_id": "T1218",
+      "description": "IMEWDBLD.exe (IME dictionary downloader) used as LOLBIN to download arbitrary files from remote URLs.",
+      "key_conditions": "Image ends with IMEWDBLD.exe; CommandLine contains http:// or https://",
+      "false_positives": "Legitimate IME dictionary updates",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_imewbdld_download.yml"
+    },
+    {
+      "id": "DB-005",
+      "title": "Arbitrary File Download Via MSPUB.EXE",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution",
+      "technique_id": "T1218",
+      "description": "Microsoft Publisher (mspub.exe) used to download arbitrary files from remote URLs via embedded object.",
+      "key_conditions": "Image ends with mspub.exe; ChildProcess or CommandLine involves remote URL; spawning unusual processes",
+      "false_positives": "Legitimate Publisher operations",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_mspub_download.yml"
+    },
+    {
+      "id": "DB-006",
+      "title": "Always Install Elevated MSI Spawned Shell",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Privilege Escalation",
+      "tactic_id": "TA0004",
+      "technique": "Bypass UAC",
+      "technique_id": "T1548.002",
+      "description": "Detects msiexec.exe spawning cmd.exe or PowerShell, indicating AlwaysInstallElevated MSI abuse for privilege escalation.",
+      "key_conditions": "ParentImage ends with msiexec.exe; NewProcessName ends with cmd.exe or powershell.exe",
+      "false_positives": "Legitimate MSI post-install actions",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_elavated_msi_spawned_shell.yml"
+    },
+    {
+      "id": "DB-007",
+      "title": "Bitsadmin Download File",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Signed Binary Proxy Execution: BITS Jobs",
+      "technique_id": "T1197",
+      "description": "Bitsadmin used to download files \u2014 living-off-the-land download cradle alternative to certutil.",
+      "key_conditions": "Image ends with bitsadmin.exe; CommandLine contains /transfer or /download and http",
+      "false_positives": "Legitimate BITS-based software updates",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_bitsadmin_download.yml"
+    },
+    {
+      "id": "DB-008",
+      "title": "Capture WiFi Credentials via Netsh",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "Credentials from Password Stores",
+      "technique_id": "T1555",
+      "description": "Netsh used to export WiFi profiles including cleartext passwords.",
+      "key_conditions": "Image ends with netsh.exe; CommandLine contains wlan and show and profile and key=clear",
+      "false_positives": "Network administrator WiFi troubleshooting",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_netsh_wifi_credential_harvesting.yml"
+    },
+    {
+      "id": "DB-009",
+      "title": "Conhost.exe CommandLine Path Traversal",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Masquerading",
+      "technique_id": "T1036",
+      "description": "Detects conhost.exe launched with suspicious path traversal in CommandLine \u2014 used to launch malicious payloads disguised as console host.",
+      "key_conditions": "Image ends with conhost.exe; CommandLine contains ../ or ..\\ patterns outside normal conhost invocation",
+      "false_positives": "Rare legitimate nested console scenarios",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_conhost_path_traversal.yml"
+    },
+    {
+      "id": "DB-010",
+      "title": "CreateDump Process Dump",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "OS Credential Dumping",
+      "technique_id": "T1003",
+      "description": "Microsoft's createdump.exe used to dump process memory including LSASS for offline credential extraction.",
+      "key_conditions": "Image ends with createdump.exe; CommandLine contains lsass or target PID",
+      "false_positives": "Legitimate .NET runtime crash dump generation",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_createdump_lsass.yml"
+    },
+    {
+      "id": "DB-011",
+      "title": "CSharp-Based BOF Execution via RunDLL32",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution: Rundll32",
+      "technique_id": "T1218.011",
+      "description": "Detects rundll32 executing C# BOF (Beacon Object File) DLLs from memory-only paths or temp directories.",
+      "key_conditions": "Image ends with rundll32.exe; CommandLine contains DotNetToJScript or unusual export name",
+      "false_positives": "Legitimate rundll32 COM operations",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_rundll32_susp_exec.yml"
+    },
+    {
+      "id": "DB-012",
+      "title": "DNS Exfiltration and Tunneling Tools Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Exfiltration",
+      "tactic_id": "TA0010",
+      "technique": "Exfiltration Over Alternative Protocol",
+      "technique_id": "T1048",
+      "description": "Detects execution of known DNS tunneling tools: dnscat2, iodine, dns2tcp, ozymandns.",
+      "key_conditions": "Image or CommandLine contains dnscat or iodine or dns2tcp or OzymandDNS",
+      "false_positives": "Authorized DNS research/pentesting",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_dns_exfiltration_tools.yml"
+    },
+    {
+      "id": "DB-013",
+      "title": "Dotnet.EXE Arbitrary DLL or Csproj Code Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution",
+      "technique_id": "T1218",
+      "description": "Dotnet.exe used to execute arbitrary .NET code or DLLs without standard PowerShell or csc.exe.",
+      "key_conditions": "Image ends with dotnet.exe; CommandLine contains .dll or .csproj from unusual path",
+      "false_positives": "Legitimate .NET SDK operations",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_dotnet_arbitrary_dll_csproj_execution.yml"
+    },
+    {
+      "id": "DB-014",
+      "title": "Esentutl Stealth Selective File Copy",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Data Transfer Size Limits",
+      "technique_id": "T1030",
+      "description": "Esentutl.exe used to copy locked or restricted files including SAM database.",
+      "key_conditions": "Image ends with esentutl.exe; CommandLine contains /y and /vssrec or /d and sensitive file paths",
+      "false_positives": "Legitimate ESE database maintenance",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_esentutl_sensitive_file_copy.yml"
+    },
+    {
+      "id": "DB-015",
+      "title": "Excel.EXE Spawning Unusual Processes",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Initial Access",
+      "tactic_id": "TA0001",
+      "technique": "Phishing: Spearphishing Attachment",
+      "technique_id": "T1566.001",
+      "description": "Excel spawning scripting engines, network tools, or unexpected processes \u2014 macro execution IOC.",
+      "key_conditions": "ParentImage ends with EXCEL.EXE; NewProcessName in [cmd.exe, powershell.exe, wscript.exe, cscript.exe, mshta.exe, certutil.exe]",
+      "false_positives": "Legitimate Excel automation macros (rare in modern environments)",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_excel_susp_child_process.yml"
+    },
+    {
+      "id": "DB-016",
+      "title": "Finger.EXE Download File",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Ingress Tool Transfer",
+      "technique_id": "T1105",
+      "description": "finger.exe used as LOLBIN to download files from remote host via finger protocol.",
+      "key_conditions": "Image ends with finger.exe; CommandLine contains http or contains @ with IP pattern",
+      "false_positives": "Legitimate finger protocol use (extremely rare)",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_finger_usage.yml"
+    },
+    {
+      "id": "DB-017",
+      "title": "Fsi.EXE/FsiAnyCPU.EXE Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution",
+      "technique_id": "T1218",
+      "description": "F# Interactive (fsi.exe) used to execute arbitrary F# code \u2014 LOLBIN for code execution bypassing script block logging.",
+      "key_conditions": "Image ends with fsi.exe or FsiAnyCPU.exe; CommandLine contains .fsx or script content",
+      "false_positives": "Legitimate F# development",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_fsi_susp_execution.yml"
+    },
+    {
+      "id": "DB-018",
+      "title": "GfxDownloadWrapper.EXE File Download",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Ingress Tool Transfer",
+      "technique_id": "T1105",
+      "description": "Intel GFX download wrapper used as LOLBIN to download arbitrary files from URLs.",
+      "key_conditions": "Image ends with GfxDownloadWrapper.exe; CommandLine contains http",
+      "false_positives": "Intel graphics driver present (legitimate use only in that context)",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_gfxdownloadwrapper.yml"
+    },
+    {
+      "id": "DB-019",
+      "title": "HH.EXE Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution: Compiled HTML File",
+      "technique_id": "T1218.001",
+      "description": "Windows Help executable hh.exe executing CHM files from unusual locations or remote paths.",
+      "key_conditions": "Image ends with hh.exe; CommandLine contains http:// or path outside standard Help directories",
+      "false_positives": "Legitimate Windows help file opening",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_hh_chm_execution.yml"
+    },
+    {
+      "id": "DB-020",
+      "title": "LOLBIN Execution from Unusual Path",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution",
+      "technique_id": "T1218",
+      "description": "Any known LOLBIN (regsvr32, mshta, wscript, cscript, rundll32) executing from non-standard path \u2014 indicates renamed or relocated binary.",
+      "key_conditions": "Image OriginalFileName matches LOLBIN but Image path is not in System32 or SysWOW64",
+      "false_positives": "Rare legitimate scenario",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_lolbin_susp_path.yml"
+    },
+    {
+      "id": "DB-021",
+      "title": "Mavinject.EXE Inject into Running Process",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Process Injection",
+      "technique_id": "T1055",
+      "description": "Mavinject.exe (Microsoft App-V injection utility) used to inject DLLs into running processes.",
+      "key_conditions": "Image ends with mavinject.exe or mavinject32.exe; CommandLine contains /INJECTRUNNING",
+      "false_positives": "Very rare legitimate App-V use",
+      "level": "critical",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_mavinject_dll_injection.yml"
+    },
+    {
+      "id": "DB-022",
+      "title": "Microsoft HTML Application Spawning Process",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution: Mshta",
+      "technique_id": "T1218.005",
+      "description": "MSHTA spawning any child process \u2014 indicates successful HTA payload execution.",
+      "key_conditions": "ParentImage ends with mshta.exe; any child process created",
+      "false_positives": "Legitimate HTA-based admin tools",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_mshta_spawn_shell.yml"
+    },
+    {
+      "id": "DB-023",
+      "title": "Netsh Port Forwarding",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Protocol Tunneling",
+      "technique_id": "T1572",
+      "description": "Netsh used to create port forwarding rules \u2014 attackers use this to redirect traffic for tunneling or lateral movement.",
+      "key_conditions": "Image ends with netsh.exe; CommandLine contains portproxy or interface portproxy add",
+      "false_positives": "Legitimate network administration port forwarding",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_netsh_port_forwarding.yml"
+    },
+    {
+      "id": "DB-024",
+      "title": "New Firewall Rule Added Via Netsh",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Impair Defenses: Disable or Modify System Firewall",
+      "technique_id": "T1562.004",
+      "description": "Netsh adding new firewall rules to allow inbound connections \u2014 attackers open ports for RAT/backdoor communication.",
+      "key_conditions": "Image ends with netsh.exe; CommandLine contains firewall add rule and action=allow and protocol",
+      "false_positives": "IT operations adding legitimate firewall rules",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_netsh_fw_add_rule.yml"
+    },
+    {
+      "id": "DB-025",
+      "title": "NirSoft Tools Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "Credentials from Password Stores",
+      "technique_id": "T1555",
+      "description": "Detects execution of NirSoft credential recovery tools (WebBrowserPassView, CredentialsFileView, NetworkPasswordRecovery, etc.) used for credential theft.",
+      "key_conditions": "Image or OriginalFileName matches known NirSoft tool names; or CommandLine contains nirsoft specific flags",
+      "false_positives": "Authorized password recovery operations",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_nirsoft_tools.yml"
+    },
+    {
+      "id": "DB-026",
+      "title": "OneNote Spawning Suspicious Process",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Initial Access",
+      "tactic_id": "TA0001",
+      "technique": "Phishing: Spearphishing Attachment",
+      "technique_id": "T1566.001",
+      "description": "OneNote (.one file) spawning scripting engines or shells \u2014 OneNote-based phishing delivery mechanism heavily abused 2022-2024.",
+      "key_conditions": "ParentImage ends with ONENOTE.EXE; NewProcessName in [cmd.exe, powershell.exe, wscript.exe, cscript.exe, mshta.exe]",
+      "false_positives": "Legitimate OneNote actions",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_onenote_susp_child_process.yml"
+    },
+    {
+      "id": "DB-027",
+      "title": "PUA - Potential PowerShell Credential Access",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "Credentials from Password Stores",
+      "technique_id": "T1555",
+      "description": "PowerShell accessing credential stores (Windows Credential Manager, DPAPI) via System.Security namespace.",
+      "key_conditions": "Image ends with powershell.exe; CommandLine contains CredentialCache or Credential.GetNetworkCredential or System.Security.Credentials or Windows.Security.Credentials",
+      "false_positives": "Legitimate PS credential management scripts",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_powershell_credential_cache.yml"
+    },
+    {
+      "id": "DB-028",
+      "title": "PrintBrm.EXE Remote File Copy",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Lateral Movement",
+      "tactic_id": "TA0008",
+      "technique": "Ingress Tool Transfer",
+      "technique_id": "T1105",
+      "description": "PrintBrm.exe used to copy files to/from remote UNC paths \u2014 LOLBIN for stealthy file transfer.",
+      "key_conditions": "Image ends with PrintBrm.exe; CommandLine contains /F and \\\\ (UNC path) and /D",
+      "false_positives": "Legitimate print queue backup/restore operations",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_printbrm_remote_file_copy.yml"
+    },
+    {
+      "id": "DB-029",
+      "title": "Python Spawning Unusual Child Process",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Execution",
+      "tactic_id": "TA0002",
+      "technique": "Command and Scripting Interpreter: Python",
+      "technique_id": "T1059.006",
+      "description": "Python interpreter spawning unexpected child processes \u2014 malicious Python scripts, reverse shells, or tool execution.",
+      "key_conditions": "ParentImage ends with python.exe or python3.exe; NewProcessName in [cmd.exe, powershell.exe] or outbound network tools",
+      "false_positives": "Legitimate Python scripts spawning subprocesses",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_python_susp_child_process.yml"
+    },
+    {
+      "id": "DB-030",
+      "title": "Reg.EXE Flags Abuse",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Modify Registry",
+      "technique_id": "T1112",
+      "description": "Reg.exe used with flags to save/restore/load/unload registry hives \u2014 used to exfiltrate SAM, SYSTEM, SECURITY hives offline.",
+      "key_conditions": "Image ends with reg.exe; CommandLine contains save or export and sam or system or security; or CommandLine contains load",
+      "false_positives": "Legitimate registry backup/restore operations",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_reg_export_hklm.yml"
+    },
+    {
+      "id": "DB-031",
+      "title": "Remote Access Tool - GoToAssist Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Remote Access Software",
+      "technique_id": "T1219",
+      "description": "GoToAssist remote access tool execution \u2014 legitimate tool abused for unauthorized remote access.",
+      "key_conditions": "Image ends with G2AService.exe or GoToAssist.exe or g2ax_comm_customer.exe",
+      "false_positives": "Authorized IT support use of GoToAssist",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_pua_gotoassist.yml"
+    },
+    {
+      "id": "DB-032",
+      "title": "Remote Access Tool - NetSupportManager Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Remote Access Software",
+      "technique_id": "T1219",
+      "description": "NetSupport Manager execution \u2014 heavily abused by TA577, Conti, IcedID campaigns as post-exploitation RAT.",
+      "key_conditions": "Image ends with client32.exe (NetSupport); or CommandLine contains Gateway and NetSupport",
+      "false_positives": "Authorized IT use of NetSupport",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_pua_netsupport_rat.yml"
+    },
+    {
+      "id": "DB-033",
+      "title": "Remote Access Tool - ScreenConnect Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Remote Access Software",
+      "technique_id": "T1219",
+      "description": "ScreenConnect (ConnectWise Control) execution \u2014 used in multiple ransomware campaigns (LockBit, BlackCat) for persistent remote access. CVE-2024-1709 exploitation indicator when spawning unusual children.",
+      "key_conditions": "Image ends with ScreenConnect.ClientService.exe or ScreenConnect.WindowsClient.exe spawning unusual child processes",
+      "false_positives": "Authorized ScreenConnect deployments",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_pua_screenconnect.yml"
+    },
+    {
+      "id": "DB-034",
+      "title": "SafeBoot Key Registry Modification",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Boot or Logon Autostart Execution",
+      "technique_id": "T1547",
+      "description": "Reg.exe adding keys to SafeBoot registry \u2014 ransomware technique to persist in safe mode where security tools don't load.",
+      "key_conditions": "Image ends with reg.exe; CommandLine contains add and HKLM\\SYSTEM\\CurrentControlSet\\Control\\SafeBoot",
+      "false_positives": "Very rare legitimate safe mode configuration",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_reg_add_safeboot.yml"
+    },
+    {
+      "id": "DB-035",
+      "title": "Scheduled Task Created Via SchtasksNT",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Persistence",
+      "tactic_id": "TA0003",
+      "technique": "Scheduled Task/Job: Scheduled Task",
+      "technique_id": "T1053.005",
+      "description": "Schtasks.exe creating tasks with suspicious AT-style naming or system-impersonating task names.",
+      "key_conditions": "Image ends with schtasks.exe; CommandLine contains /create and (/ru SYSTEM or /rl HIGHEST) and unusual TaskName patterns",
+      "false_positives": "Legitimate system task creation",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_schtasks_creation.yml"
+    },
+    {
+      "id": "DB-036",
+      "title": "Script Interpreter Execution From Suspicious Folder",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Masquerading",
+      "technique_id": "T1036",
+      "description": "Scripting interpreters (wscript.exe, cscript.exe) executing scripts from temp, downloads, or unusual paths.",
+      "key_conditions": "Image ends with wscript.exe or cscript.exe; CommandLine contains script path in Temp, Downloads, AppData, or ProgramData",
+      "false_positives": "Legitimate scripts in unusual locations (software installers)",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_script_engine_susp_path.yml"
+    },
+    {
+      "id": "DB-037",
+      "title": "Squiblydoo - Regsvr32 Loading Remote Scriptlet",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution: Regsvr32",
+      "technique_id": "T1218.010",
+      "description": "Regsvr32 loading a COM scriptlet from a remote URL or UNC path (Squiblydoo AppLocker bypass).",
+      "key_conditions": "Image ends with regsvr32.exe; CommandLine contains /s /u /i: and http:// or \\\\",
+      "false_positives": "Legitimate regsvr32 COM registration (rare with remote paths)",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_regsvr32_susp_exec.yml"
+    },
+    {
+      "id": "DB-038",
+      "title": "Suspicious Advpack DLL",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution: Rundll32",
+      "technique_id": "T1218.011",
+      "description": "Rundll32 executing advpack.dll or setupapi.dll functions used to run INF install scripts for arbitrary code execution.",
+      "key_conditions": "Image ends with rundll32.exe; CommandLine contains advpack.dll,LaunchINFSection or setupapi.dll,InstallHinfSection",
+      "false_positives": "Legitimate software installation using INF files",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_rundll32_advpack_setupapi.yml"
+    },
+    {
+      "id": "DB-039",
+      "title": "Suspicious Cmstp Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution: CMSTP",
+      "technique_id": "T1218.003",
+      "description": "Cmstp.exe (Microsoft Connection Manager Profile Installer) executing .inf file from network share \u2014 UAC bypass and AppLocker bypass technique.",
+      "key_conditions": "Image ends with cmstp.exe; CommandLine contains /s and (/ns or /au or .inf file from network path)",
+      "false_positives": "Legitimate VPN connection profile installation",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_cmstp_execution.yml"
+    },
+    {
+      "id": "DB-040",
+      "title": "Suspicious Desktopimgdownldr.EXE Download",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Ingress Tool Transfer",
+      "technique_id": "T1105",
+      "description": "Desktopimgdownldr.exe (lock screen image downloader) abused to download arbitrary files from the internet.",
+      "key_conditions": "Image ends with desktopimgdownldr.exe; CommandLine contains /lockscreenurl: and http",
+      "false_positives": "No legitimate use with arbitrary URLs",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_desktopimgdownldr_susp_args.yml"
+    },
+    {
+      "id": "DB-041",
+      "title": "Suspicious Diantz Alternate Data Stream",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Hide Artifacts: NTFS File Attributes",
+      "technique_id": "T1564.004",
+      "description": "Diantz.exe used to compress files into alternate data streams (ADS) to hide malicious content.",
+      "key_conditions": "Image ends with diantz.exe; CommandLine contains :\\\\<filename>:<stream> (ADS notation)",
+      "false_positives": "Legitimate cabinet file creation",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_diantz_ads.yml"
+    },
+    {
+      "id": "DB-042",
+      "title": "Suspicious DiskShadow Usage",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Signed Binary Proxy Execution",
+      "technique_id": "T1218",
+      "description": "DiskShadow.exe used with script file \u2014 can proxy execution of arbitrary commands via VSS shadow copy operations.",
+      "key_conditions": "Image ends with diskshadow.exe; CommandLine contains /s (script mode) and unusual script path",
+      "false_positives": "Legitimate VSS management operations",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_diskshadow_script.yml"
+    },
+    {
+      "id": "DB-043",
+      "title": "Suspicious Double Extension File Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Masquerading: Double File Extension",
+      "technique_id": "T1036.007",
+      "description": "Execution of files with double extensions (e.g., invoice.pdf.exe, document.docx.scr) used to trick users.",
+      "key_conditions": "Image or CommandLine contains filename pattern \\.(pdf|doc|xls|jpg|png)\\.(exe|scr|bat|com|vbs|js)",
+      "false_positives": "None \u2014 double extension is nearly always malicious",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_double_extension.yml"
+    },
+    {
+      "id": "DB-044",
+      "title": "Suspicious Findstr.EXE Usage",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Discovery",
+      "tactic_id": "TA0007",
+      "technique": "File and Directory Discovery",
+      "technique_id": "T1083",
+      "description": "Findstr.exe used to search for sensitive strings (passwords, credentials, private keys) or to download remote files.",
+      "key_conditions": "Image ends with findstr.exe; CommandLine contains /s /i and (password or secret or key); or CommandLine contains http:// (download via findstr)",
+      "false_positives": "Legitimate code/log searching",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_findstr_susp_usage.yml"
+    },
+    {
+      "id": "DB-045",
+      "title": "Suspicious Ftp.EXE Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Ingress Tool Transfer",
+      "technique_id": "T1105",
+      "description": "FTP client (ftp.exe) used for file transfer or as script execution proxy \u2014 rare in modern environments.",
+      "key_conditions": "Image ends with ftp.exe; CommandLine contains -s: (script) or -n (no auto-login) with unusual server",
+      "false_positives": "Legitimate FTP transfers (rare in enterprise)",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_ftp_file_transfer.yml"
+    },
+    {
+      "id": "DB-046",
+      "title": "Suspicious GrpConv.EXE Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution",
+      "technique_id": "T1218",
+      "description": "GrpConv.exe used to execute malicious .grp files containing arbitrary commands.",
+      "key_conditions": "Image ends with grpconv.exe; CommandLine contains .grp file from unusual path",
+      "false_positives": "Legitimate Program Manager group conversion (Windows 3.x era \u2014 very rare)",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_grpconv.yml"
+    },
+    {
+      "id": "DB-047",
+      "title": "Suspicious Homedrive Env Variable Usage",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Masquerading",
+      "technique_id": "T1036",
+      "description": "Malware using HOMEDRIVE environment variable to construct paths that evade static path-based detection.",
+      "key_conditions": "CommandLine contains %HOMEDRIVE% with script/executable reference outside normal user profile locations",
+      "false_positives": "Some legitimate user scripts use HOMEDRIVE",
+      "level": "low",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_homedrive_env_var.yml"
+    },
+    {
+      "id": "DB-048",
+      "title": "Suspicious Ieexec.EXE Usage",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution",
+      "technique_id": "T1218",
+      "description": "IEExec.exe (IE execution helper) used to download and execute arbitrary .NET applications from URLs.",
+      "key_conditions": "Image ends with ieexec.exe; CommandLine contains http:// or https://",
+      "false_positives": "No legitimate modern use",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_ieexec_susp_usage.yml"
+    },
+    {
+      "id": "DB-049",
+      "title": "Suspicious Infdefaultinstall.EXE Usage",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution",
+      "technique_id": "T1218",
+      "description": "Infdefaultinstall.exe executing INF scripts to run arbitrary commands \u2014 AppLocker and UAC bypass.",
+      "key_conditions": "Image ends with InfDefaultInstall.exe; CommandLine contains .inf file from unusual path",
+      "false_positives": "Legitimate INF file installation",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_infdefaultinstall.yml"
+    },
+    {
+      "id": "DB-050",
+      "title": "Suspicious Invoke-WebRequest Usage",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Ingress Tool Transfer",
+      "technique_id": "T1105",
+      "description": "PowerShell Invoke-WebRequest or wget/curl aliases used to download malicious payloads.",
+      "key_conditions": "Image ends with powershell.exe; CommandLine contains Invoke-WebRequest or iwr or wget or curl and -OutFile or -Uri and http",
+      "false_positives": "Legitimate PS-based software download",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_powershell_download_cradle.yml"
+    },
+    {
+      "id": "DB-051",
+      "title": "Suspicious Msiexec Quiet Install",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Masquerading",
+      "technique_id": "T1036",
+      "description": "Msiexec executing MSI from remote URL or unusual path with /quiet flag \u2014 silent malware installation.",
+      "key_conditions": "Image ends with msiexec.exe; CommandLine contains /i and http:// and (/quiet or /q)",
+      "false_positives": "Legitimate silent software deployment via MSI",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_msiexec_remote_pkg_install.yml"
+    },
+    {
+      "id": "DB-052",
+      "title": "Suspicious MSODiagnostics Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution",
+      "technique_id": "T1218",
+      "description": "Microsoft Office diagnostic tool abused to proxy DLL execution or download content.",
+      "key_conditions": "Image ends with MSODiagnostics.exe; CommandLine with unusual arguments or URL references",
+      "false_positives": "Legitimate Office diagnostics",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_office_onenote_susp_child_process.yml"
+    },
+    {
+      "id": "DB-053",
+      "title": "Suspicious Parent of Csc.EXE",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Defense Evasion",
+      "technique_id": "T1027",
+      "description": "Csc.exe (C# compiler) invoked by suspicious parents \u2014 in-memory compilation of malicious C# payloads.",
+      "key_conditions": "ParentImage in [wscript.exe, mshta.exe, outlook.exe, winword.exe]; NewProcessName ends with csc.exe",
+      "false_positives": "Legitimate Office add-in compilation (rare)",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_susp_csc_parent.yml"
+    },
+    {
+      "id": "DB-054",
+      "title": "Suspicious PowerShell Download Activity",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Ingress Tool Transfer",
+      "technique_id": "T1105",
+      "description": "PowerShell downloading content from file sharing domains (Discord CDN, file.io, transfer.sh, paste sites) commonly used for payload hosting.",
+      "key_conditions": "Image ends with powershell.exe; CommandLine contains (discord.com/attachments or cdn.discordapp.com or transfer.sh or file.io or hastebin.com) and (Invoke-WebRequest or DownloadFile or DownloadString)",
+      "false_positives": "Legitimate Discord/file sharing in enterprise (rare)",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_powershell_download_susp_file_sharing_domains.yml"
+    },
+    {
+      "id": "DB-055",
+      "title": "Suspicious Regasm/Regsvcs Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution",
+      "technique_id": "T1218",
+      "description": "Regasm.exe and Regsvcs.exe used to execute arbitrary .NET assembly code via COM registration \u2014 AppLocker bypass.",
+      "key_conditions": "Image ends with regasm.exe or regsvcs.exe; CommandLine contains .dll or .exe from unusual path",
+      "false_positives": "Legitimate .NET assembly COM registration",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_regasm_regsvcs_susp.yml"
+    },
+    {
+      "id": "DB-056",
+      "title": "Suspicious Rundll32 No Arguments",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution: Rundll32",
+      "technique_id": "T1218.011",
+      "description": "Rundll32 spawned without arguments \u2014 Cobalt Strike and similar frameworks use argumentless rundll32 as sacrificial process for injection.",
+      "key_conditions": "Image ends with rundll32.exe; CommandLine is empty or contains only rundll32.exe with no additional arguments",
+      "false_positives": "Very rare legitimate use",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_rundll32_no_args.yml"
+    },
+    {
+      "id": "DB-057",
+      "title": "Suspicious SC.EXE Usage",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Persistence",
+      "tactic_id": "TA0003",
+      "technique": "Create or Modify System Process: Windows Service",
+      "technique_id": "T1543.003",
+      "description": "Sc.exe creating or modifying services with unusual binary paths \u2014 service hijacking or new malicious service installation.",
+      "key_conditions": "Image ends with sc.exe; CommandLine contains create and binpath= with unusual path (temp, appdata)",
+      "false_positives": "Legitimate service management",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_sc_create_service.yml"
+    },
+    {
+      "id": "DB-058",
+      "title": "Suspicious Scrobj.EXE Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution",
+      "technique_id": "T1218",
+      "description": "Scrobj.dll (Windows Script Component runtime) used to execute WSC script files \u2014 AppLocker bypass technique.",
+      "key_conditions": "Image ends with scrobj.exe or CommandLine contains scrobj.dll and scriptlet",
+      "false_positives": "Legitimate Windows script component use",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_scrobj_com.yml"
+    },
+    {
+      "id": "DB-059",
+      "title": "Suspicious Scriptrunner Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution",
+      "technique_id": "T1218",
+      "description": "Scriptrunner.exe used as LOLBIN to execute arbitrary commands masquerading as a legitimate script runner.",
+      "key_conditions": "Image ends with Scriptrunner.exe; CommandLine contains -appvscript or unusual script path",
+      "false_positives": "No documented legitimate use as general script runner",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_scriptrunner.yml"
+    },
+    {
+      "id": "DB-060",
+      "title": "Suspicious ShellExec_RunDLL Usage",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution: Rundll32",
+      "technique_id": "T1218.011",
+      "description": "Rundll32 executing shell32.dll ShellExec_RunDLL to launch URLs or files while bypassing standard execution monitoring.",
+      "key_conditions": "Image ends with rundll32.exe; CommandLine contains shell32.dll,ShellExec_RunDLL and http:// or unusual file path",
+      "false_positives": "Rare legitimate shell launching",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_rundll32_shellexec_rundll.yml"
+    },
+    {
+      "id": "DB-061",
+      "title": "Suspicious SyncAppvPublishingServer Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution",
+      "technique_id": "T1218",
+      "description": "SyncAppvPublishingServer.exe or .vbs used to execute PowerShell commands bypassing execution policy.",
+      "key_conditions": "Image ends with SyncAppvPublishingServer.exe or SyncAppvPublishingServer.vbs; CommandLine contains PowerShell commands",
+      "false_positives": "Legitimate App-V publishing",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_syncappvpublishingserver_susp.yml"
+    },
+    {
+      "id": "DB-062",
+      "title": "Suspicious Unused RunDLL32 Shell32 Function",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution: Rundll32",
+      "technique_id": "T1218.011",
+      "description": "Rundll32 calling obscure undocumented Shell32 functions used for process spoofing and execution.",
+      "key_conditions": "Image ends with rundll32.exe; CommandLine contains shell32.dll and (Control_RunDLL or OpenAs_RunDLL or printui.dll)",
+      "false_positives": "Legitimate control panel applet launching",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_rundll32_susp_shell32.yml"
+    },
+    {
+      "id": "DB-063",
+      "title": "Suspicious Use of Net.EXE \u2014 Domain Recon",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Discovery",
+      "tactic_id": "TA0007",
+      "technique": "Domain Account Discovery",
+      "technique_id": "T1087.002",
+      "description": "Net.exe commands for AD reconnaissance \u2014 net user /domain, net group /domain, net accounts /domain.",
+      "key_conditions": "Image ends with net.exe or net1.exe; CommandLine contains /domain and (user or group or accounts)",
+      "false_positives": "Legitimate admin account queries",
+      "level": "low",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_net_groups_and_accounts_recon.yml"
+    },
+    {
+      "id": "DB-064",
+      "title": "Suspicious XwizardDLL Execution",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "System Binary Proxy Execution",
+      "technique_id": "T1218",
+      "description": "Xwizard.exe used to load arbitrary DLLs \u2014 LOLBIN technique abusing wizard framework.",
+      "key_conditions": "Image ends with xwizard.exe; CommandLine contains unusual CLSID or DLL path not in standard Windows locations",
+      "false_positives": "Very rare legitimate wizard invocation",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_xwizard_susp.yml"
+    },
+    {
+      "id": "DB-065",
+      "title": "Sysmon Driver Unload via fltmc.exe",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Impair Defenses",
+      "technique_id": "T1562.001",
+      "description": "Fltmc.exe used to unload the Sysmon minifilter driver, blinding endpoint monitoring.",
+      "key_conditions": "Image ends with fltmc.exe; CommandLine contains unload and SysmonDrv",
+      "false_positives": "No legitimate reason to unload Sysmon driver",
+      "level": "critical",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_fltmc_unload_driver_sysmon.yml"
+    },
+    {
+      "id": "DB-066",
+      "title": "Trickbot Malware Recon Activity",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Discovery",
+      "tactic_id": "TA0007",
+      "technique": "System Information Discovery",
+      "technique_id": "T1082",
+      "description": "Pattern of recon commands characteristic of TrickBot/BazarLoader post-exploitation activity.",
+      "key_conditions": "CommandLine sequence: ipconfig/all, net view /all, net view /all /domain, nltest /domain_trusts executed in rapid succession from same parent",
+      "false_positives": "Legitimate admin recon (very similar patterns, tune by context)",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_malware_trickbot_recon_activity.yml"
+    },
+    {
+      "id": "DB-067",
+      "title": "Unusual Parent Process for cmd.exe",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Execution",
+      "tactic_id": "TA0002",
+      "technique": "Command and Scripting Interpreter: Windows Command Shell",
+      "technique_id": "T1059.003",
+      "description": "Cmd.exe launched from unusual parent processes that don't normally spawn cmd \u2014 browser, mail client, or system process.",
+      "key_conditions": "NewProcessName ends with cmd.exe; ParentImage ends with [chrome.exe, firefox.exe, OUTLOOK.EXE, iexplore.exe, explorer.exe] with suspicious CommandLine arguments",
+      "false_positives": "Legitimate cmd invocation from some applications",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_cmd_susp_parent.yml"
+    },
+    {
+      "id": "DB-068",
+      "title": "VsCode Tunnel Persistence",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Remote Access Software",
+      "technique_id": "T1219",
+      "description": "Visual Studio Code tunnel used for persistent remote access \u2014 'code tunnel' creates an authenticated reverse tunnel attackers abuse.",
+      "key_conditions": "Image ends with code.exe or code-tunnel.exe; CommandLine contains tunnel",
+      "false_positives": "Legitimate developer VS Code remote development",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_vscode_tunnel_execution.yml"
+    },
+    {
+      "id": "DB-069",
+      "title": "Wmic Uninstall Security Software",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Impair Defenses: Disable or Modify Tools",
+      "technique_id": "T1562.001",
+      "description": "WMIC used to uninstall security software including AV, EDR agents.",
+      "key_conditions": "Image ends with wmic.exe; CommandLine contains product and where and call uninstall and (antivirus or endpoint or defender or security)",
+      "false_positives": "Legitimate software removal via WMIC",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_wmic_uninstall_security_software.yml"
+    },
+    {
+      "id": "DB-070",
+      "title": "XCopy Executable Lateral Movement",
+      "sysmon_eids": [
+        1
+      ],
+      "tactic": "Lateral Movement",
+      "tactic_id": "TA0008",
+      "technique": "Lateral Tool Transfer",
+      "technique_id": "T1570",
+      "description": "XCopy used to copy executables to remote admin shares \u2014 lateral movement file staging technique.",
+      "key_conditions": "Image ends with xcopy.exe; CommandLine contains \\\\ (UNC path) and .exe; DestinationPath includes ADMIN$ or C$",
+      "false_positives": "Legitimate xcopy-based software deployment",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_creation/proc_creation_win_xcopy_lateral_movement.yml"
+    },
+    {
+      "id": "DB-071",
+      "title": "Remote Desktop from Non-Standard Tool",
+      "sysmon_eids": [
+        3
+      ],
+      "tactic": "Lateral Movement",
+      "tactic_id": "TA0008",
+      "technique": "Remote Desktop Protocol",
+      "technique_id": "T1021.001",
+      "description": "Non-RDP-client processes initiating RDP connections (port 3389) \u2014 indicates RDP tunneling or custom RDP tool.",
+      "key_conditions": "Initiated=true; DestinationPort=3389; Image not in [mstsc.exe, msrdc.exe, known RDP clients]",
+      "false_positives": "Security scanners, RDP management tools",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_rdp_susp_process.yml"
+    },
+    {
+      "id": "DB-072",
+      "title": "WannaCry Ransomware Network Propagation",
+      "sysmon_eids": [
+        3
+      ],
+      "tactic": "Lateral Movement",
+      "tactic_id": "TA0008",
+      "technique": "Exploit Public-Facing Application",
+      "technique_id": "T1190",
+      "description": "Detects network scanning on port 445 (SMB) characteristic of WannaCry/NotPetya and similar worm propagation.",
+      "key_conditions": "Initiated=true; DestinationPort=445; Image not in known system processes; high connection rate to diverse destination IPs",
+      "false_positives": "Network security scanners, legitimate SMB traffic",
+      "level": "critical",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_smb_susp_connection.yml"
+    },
+    {
+      "id": "DB-073",
+      "title": "Adfind Network Connection",
+      "sysmon_eids": [
+        3
+      ],
+      "tactic": "Discovery",
+      "tactic_id": "TA0007",
+      "technique": "Remote System Discovery",
+      "technique_id": "T1018",
+      "description": "AdFind making LDAP connections to domain controllers (port 389/636/3268) \u2014 confirms active AD enumeration.",
+      "key_conditions": "Image ends with adfind.exe or AdFind.exe; Initiated=true; DestinationPort in [389,636,3268,3269]",
+      "false_positives": "No legitimate non-AD-recon use of AdFind against DC",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_adfind_dc.yml"
+    },
+    {
+      "id": "DB-074",
+      "title": "SharpHound Network Connection to DC",
+      "sysmon_eids": [
+        3
+      ],
+      "tactic": "Discovery",
+      "tactic_id": "TA0007",
+      "technique": "Domain Trust Discovery",
+      "technique_id": "T1482",
+      "description": "SharpHound (BloodHound collector) making LDAP/SMB connections to domain controllers.",
+      "key_conditions": "Image ends with SharpHound.exe or matches compiled collector binary; DestinationPort in [389,445,636]",
+      "false_positives": "Authorized BloodHound runs during assessment",
+      "level": "critical",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_sharphound_ldap.yml"
+    },
+    {
+      "id": "DB-075",
+      "title": "Potential C2 Reverse Shell Connection",
+      "sysmon_eids": [
+        3
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Non-Standard Port",
+      "technique_id": "T1571",
+      "description": "Outbound TCP connection from PowerShell or cmd.exe with very small payload size and regular intervals \u2014 reverse shell beacon pattern.",
+      "key_conditions": "Image in [powershell.exe, cmd.exe]; Initiated=true; DestinationPort not in [80,443,53,8080]; DestinationIp is external",
+      "false_positives": "Development and testing activities",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_powershell.yml"
+    },
+    {
+      "id": "DB-076",
+      "title": "FTP Connection from Unusual Process",
+      "sysmon_eids": [
+        3
+      ],
+      "tactic": "Exfiltration",
+      "tactic_id": "TA0010",
+      "technique": "Exfiltration Over Alternative Protocol: FTP",
+      "technique_id": "T1048.003",
+      "description": "Non-FTP-client process making FTP connections (port 21) \u2014 data exfiltration via FTP from unexpected tools.",
+      "key_conditions": "Initiated=true; DestinationPort=21; Image not in [ftp.exe, winscp.exe, filezilla.exe, known FTP clients]",
+      "false_positives": "Enterprise FTP servers receiving legitimate connections",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/network_connection/net_connection_win_ftp.yml"
+    },
+    {
+      "id": "DB-077",
+      "title": "Assembly Loaded from Suspicious Path",
+      "sysmon_eids": [
+        7
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Reflective Code Loading",
+      "technique_id": "T1620",
+      "description": "Unsigned .NET assembly loaded from temp or user-writable directory \u2014 reflective loading or side-load attack.",
+      "key_conditions": "ImageLoaded path in Temp or AppData or ProgramData; Signed=false; extension is .dll or .clr",
+      "false_positives": "Legitimate software with DLLs in AppData (e.g., Chrome extensions)",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/image_load/image_load_win_susp_dll_load.yml"
+    },
+    {
+      "id": "DB-078",
+      "title": "Known Credential Access DLL Loaded",
+      "sysmon_eids": [
+        7
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "OS Credential Dumping",
+      "technique_id": "T1003",
+      "description": "Known credential access tool DLL (samlib.dll, vaultcli.dll, wdigest.dll) loaded into unusual process.",
+      "key_conditions": "ImageLoaded ends with samlib.dll or vaultcli.dll or wdigest.dll; Image not in expected system processes",
+      "false_positives": "Normal Windows credential operations",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/image_load/image_load_win_susp_credential_access.yml"
+    },
+    {
+      "id": "DB-079",
+      "title": "Remote Access Tool DLL Load",
+      "sysmon_eids": [
+        7
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Remote Access Software",
+      "technique_id": "T1219",
+      "description": "Known RMM tool DLL loaded \u2014 indicates RMM tool installation or execution even if the main binary is renamed.",
+      "key_conditions": "ImageLoaded ends with known RMM DLL names (anydesk.dll, TeamViewer.dll, ScreenConnect DLLs)",
+      "false_positives": "Authorized RMM tool deployments",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/image_load/image_load_win_susp_dll_load.yml"
+    },
+    {
+      "id": "DB-080",
+      "title": "Credential Dumping via Mimikatz GrantedAccess Mask",
+      "sysmon_eids": [
+        10
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "OS Credential Dumping: LSASS Memory",
+      "technique_id": "T1003.001",
+      "description": "High-precision Mimikatz detection via specific GrantedAccess masks and CallTrace indicating sekurlsa module.",
+      "key_conditions": "TargetImage ends with lsass.exe; GrantedAccess=0x1010 or 0x1410; CallTrace contains unknown module (shellcode)",
+      "false_positives": "AV/EDR monitoring of LSASS",
+      "level": "critical",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_access/proc_access_win_lsass_access.yml"
+    },
+    {
+      "id": "DB-081",
+      "title": "SAM Database Handle Request",
+      "sysmon_eids": [
+        10
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "Security Account Manager",
+      "technique_id": "T1003.002",
+      "description": "Process opening handle to SAM database hive \u2014 credential dumping targeting local account hashes.",
+      "key_conditions": "TargetImage ends with lsass.exe; GrantedAccess contains 0x40 or 0x1000; CallTrace contains samlib.dll",
+      "false_positives": "Backup software, security auditing tools",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_access/proc_access_win_susp_proc_access.yml"
+    },
+    {
+      "id": "DB-082",
+      "title": "Malicious Document Macro Drop",
+      "sysmon_eids": [
+        11
+      ],
+      "tactic": "Initial Access",
+      "tactic_id": "TA0001",
+      "technique": "Phishing: Spearphishing Attachment",
+      "technique_id": "T1566.001",
+      "description": "Office application writing script files (.js, .vbs, .hta, .bat) to disk \u2014 macro dropper activity.",
+      "key_conditions": "Image ends with WINWORD.EXE or EXCEL.EXE; TargetFilename ends with .js or .vbs or .bat or .hta or .ps1",
+      "false_positives": "Legitimate macro-based reporting tools (rare)",
+      "level": "critical",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_office_macro_file_drop.yml"
+    },
+    {
+      "id": "DB-083",
+      "title": "Webshell Drop by Web Server",
+      "sysmon_eids": [
+        11
+      ],
+      "tactic": "Persistence",
+      "tactic_id": "TA0003",
+      "technique": "Server Software Component: Web Shell",
+      "technique_id": "T1505.003",
+      "description": "Web server process (IIS, Apache, Tomcat) creating script files in web directories \u2014 webshell upload.",
+      "key_conditions": "ParentImage in [w3wp.exe, httpd.exe, tomcat.exe, nginx.exe]; TargetFilename ends with .aspx or .php or .jsp and web directory path",
+      "false_positives": "Legitimate web application deployments",
+      "level": "critical",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_web_shell_creation.yml"
+    },
+    {
+      "id": "DB-084",
+      "title": "Ransomware Ransom Note File Created",
+      "sysmon_eids": [
+        11
+      ],
+      "tactic": "Impact",
+      "tactic_id": "TA0040",
+      "technique": "Data Encrypted for Impact",
+      "technique_id": "T1486",
+      "description": "Creation of files matching common ransomware ransom note naming patterns (HOW_TO_DECRYPT, README_DECRYPT, RESTORE_FILES).",
+      "key_conditions": "TargetFilename matches patterns: *HOW_TO* or *DECRYPT* or *RESTORE* or *README*_*ransom* or *YOUR_FILES*; created in bulk across multiple directories",
+      "false_positives": "None \u2014 these file names are highly specific to ransomware",
+      "level": "critical",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_ransomware_ransom_note.yml"
+    },
+    {
+      "id": "DB-085",
+      "title": "Suspicious Executable File Extension Masquerade",
+      "sysmon_eids": [
+        11
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Masquerading: Rename System Utilities",
+      "technique_id": "T1036.003",
+      "description": "File created with executable content but non-executable extension \u2014 masquerading technique to evade extension-based detection.",
+      "key_conditions": "TargetFilename ends with .txt or .log or .dat or .tmp; Hashes indicates PE header; created in temp directories",
+      "false_positives": "Log files and temp data that happen to start with MZ (rare)",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_create_non_exe_extension.yml"
+    },
+    {
+      "id": "DB-086",
+      "title": "AMSI Provider DLL Drop",
+      "sysmon_eids": [
+        11
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Impair Defenses: AMSI Bypass",
+      "technique_id": "T1562",
+      "description": "New DLL dropped to path associated with AMSI (Antimalware Scan Interface) providers \u2014 AMSI bypass via rogue provider registration.",
+      "key_conditions": "TargetFilename path contains AmsiProvider or AMSI; extension is .dll; Image not in Windows installer processes",
+      "false_positives": "Legitimate security product AMSI provider updates",
+      "level": "critical",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_amsi_provider_drop.yml"
+    },
+    {
+      "id": "DB-087",
+      "title": "COM Object Hijacking via Registry",
+      "sysmon_eids": [
+        12,
+        13
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "COM Hijacking",
+      "technique_id": "T1546.015",
+      "description": "HKCU CLSID registration overriding HKLM CLSID \u2014 COM object hijacking for persistence without admin privileges.",
+      "key_conditions": "TargetObject contains HKCU\\SOFTWARE\\Classes\\CLSID; EventType=CreateKey or SetValue; new InProcServer32 or LocalServer32 pointing to unusual DLL",
+      "false_positives": "Legitimate user-space COM registration (rare)",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_com_hijacking_via_hkcu.yml"
+    },
+    {
+      "id": "DB-088",
+      "title": "Credential Manager Registry Modification",
+      "sysmon_eids": [
+        13
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "Credentials from Password Stores",
+      "technique_id": "T1555",
+      "description": "Registry modification to Credential Manager settings \u2014 disabling credential guard or modifying vault behavior.",
+      "key_conditions": "TargetObject contains \\Control\\Lsa\\DisableRestrictedAdmin or \\CurrentControlSet\\Control\\SecurityProviders; EventType=SetValue; unusual value",
+      "false_positives": "Security policy configuration by admins",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_cred_manager_config.yml"
+    },
+    {
+      "id": "DB-089",
+      "title": "Disable Security Center Notifications",
+      "sysmon_eids": [
+        13
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Impair Defenses",
+      "technique_id": "T1562.001",
+      "description": "Registry modification disabling Windows Security Center notifications \u2014 attackers disable to prevent user awareness of disabled security controls.",
+      "key_conditions": "TargetObject contains SOFTWARE\\Microsoft\\Security Center\\Notifications\\DisableNotify; Details=1",
+      "false_positives": "Group Policy-based notification management",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_disable_security_center.yml"
+    },
+    {
+      "id": "DB-090",
+      "title": "NetNTLM Downgrade Attack",
+      "sysmon_eids": [
+        13
+      ],
+      "tactic": "Credential Access",
+      "tactic_id": "TA0006",
+      "technique": "Modification of Authentication Process",
+      "technique_id": "T1556",
+      "description": "Registry modification to LMCompatibilityLevel \u2014 forcing weaker NTLM authentication for credential capture.",
+      "key_conditions": "TargetObject contains \\CurrentControlSet\\Control\\Lsa\\LmCompatibilityLevel; Details set to 0,1,2 (reduced from 3+)",
+      "false_positives": "Legacy system compatibility requirements",
+      "level": "critical",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_net_ntlm_downgrade.yml"
+    },
+    {
+      "id": "DB-091",
+      "title": "PortProxy Registry Entry",
+      "sysmon_eids": [
+        12,
+        13
+      ],
+      "tactic": "Lateral Movement",
+      "tactic_id": "TA0008",
+      "technique": "Protocol Tunneling",
+      "technique_id": "T1572",
+      "description": "Registry entry for Windows port proxy (netsh portproxy) \u2014 persistent port forwarding for C2 or lateral movement.",
+      "key_conditions": "TargetObject contains \\CurrentControlSet\\Services\\PortProxy\\v4tov4",
+      "false_positives": "Legitimate network routing configuration",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_portproxy_configuration.yml"
+    },
+    {
+      "id": "DB-092",
+      "title": "Remote Desktop Shadowing Registry",
+      "sysmon_eids": [
+        13
+      ],
+      "tactic": "Collection",
+      "tactic_id": "TA0009",
+      "technique": "Video Capture",
+      "technique_id": "T1125",
+      "description": "Registry modification enabling Remote Desktop Shadowing \u2014 allows silently viewing/interacting with user sessions without consent.",
+      "key_conditions": "TargetObject contains Terminal Server\\AllowMultiTSInstances or Shadow; value enabling shadowing without consent",
+      "false_positives": "IT support remote assistance",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_enable_rdp_shadowing.yml"
+    },
+    {
+      "id": "DB-093",
+      "title": "Sysmon Configuration Tampering via Registry",
+      "sysmon_eids": [
+        13
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Impair Defenses",
+      "technique_id": "T1562.001",
+      "description": "Direct registry modification of Sysmon configuration parameters \u2014 bypassing normal sysmon.exe config update to tamper with rules.",
+      "key_conditions": "TargetObject contains \\SYSTEM\\CurrentControlSet\\Services\\SysmonDrv; EventType=SetValue; Image not sysmon.exe or System",
+      "false_positives": "No legitimate use case outside Sysmon itself",
+      "level": "critical",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_sysmon_configuration_change.yml"
+    },
+    {
+      "id": "DB-094",
+      "title": "Sticky Keys Backdoor Registry",
+      "sysmon_eids": [
+        12,
+        13
+      ],
+      "tactic": "Persistence",
+      "tactic_id": "TA0003",
+      "technique": "Event Triggered Execution: Accessibility Features",
+      "technique_id": "T1546.008",
+      "description": "IFEO debugger set for accessibility binaries (sethc.exe, utilman.exe, osk.exe) \u2014 creates backdoor shell at login screen.",
+      "key_conditions": "TargetObject contains Image File Execution Options\\sethc.exe or utilman.exe or osk.exe or Magnify.exe; Debugger value set",
+      "false_positives": "Security testing in lab environments",
+      "level": "critical",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_ifeo_persistence.yml"
+    },
+    {
+      "id": "DB-095",
+      "title": "Windows Subsystem Linux Registry Modification",
+      "sysmon_eids": [
+        12,
+        13
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Indirect Command Execution",
+      "technique_id": "T1202",
+      "description": "WSL (Windows Subsystem for Linux) registry modification enabling or configuring WSL \u2014 attackers use Linux side to evade Windows detection.",
+      "key_conditions": "TargetObject contains HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Lxss or \\kernel\\lxss; unexpected enabling",
+      "false_positives": "Legitimate developer enabling WSL",
+      "level": "low",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/registry/registry_event_wsl_enable.yml"
+    },
+    {
+      "id": "DB-096",
+      "title": "Macro-Enabled Office Document Downloaded",
+      "sysmon_eids": [
+        15
+      ],
+      "tactic": "Initial Access",
+      "tactic_id": "TA0001",
+      "technique": "Phishing: Spearphishing Attachment",
+      "technique_id": "T1566.001",
+      "description": "Office documents with macro capability (.xlsm, .xlam, .docm, .dotm, .pptm) downloaded from internet.",
+      "key_conditions": "TargetFilename ends with .xlsm or .xlam or .docm or .dotm or .pptm or .xlsb; Zone.Identifier stream with ZoneId=3",
+      "false_positives": "Legitimate macro-enabled business documents from trusted sources",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_office_macro_download.yml"
+    },
+    {
+      "id": "DB-097",
+      "title": "Potentially Malicious File Extension Downloaded",
+      "sysmon_eids": [
+        15
+      ],
+      "tactic": "Initial Access",
+      "tactic_id": "TA0001",
+      "technique": "Phishing: Spearphishing Link",
+      "technique_id": "T1566.002",
+      "description": "High-risk file types downloaded from internet: CHM, HTA, MSI, VHDX, WSF, WSH.",
+      "key_conditions": "TargetFilename ends with .chm or .hta or .msi or .vhdx or .wsf or .wsh; Zone.Identifier with ZoneId=3",
+      "false_positives": "Legitimate software distributed via these formats",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_download_extension.yml"
+    },
+    {
+      "id": "DB-098",
+      "title": "Metasploit Meterpreter Named Pipe",
+      "sysmon_eids": [
+        17,
+        18
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Non-Application Layer Protocol",
+      "technique_id": "T1095",
+      "description": "Meterpreter reverse shell named pipe patterns \u2014 default and common custom pipe names.",
+      "key_conditions": "PipeName matches \\\\pipe\\\\meterpreter* or \\\\pipe\\\\msf* or \\\\pipe\\\\met*; or random 8+ character pipe names created by unusual processes",
+      "false_positives": "Security testing tools in authorized red team ops",
+      "level": "critical",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/pipe_created/pipe_created_win_susp_cobaltstrike_pipe_patterns.yml"
+    },
+    {
+      "id": "DB-099",
+      "title": "Impacket Tool Named Pipe Activity",
+      "sysmon_eids": [
+        17,
+        18
+      ],
+      "tactic": "Lateral Movement",
+      "tactic_id": "TA0008",
+      "technique": "SMB/Windows Admin Shares",
+      "technique_id": "T1021.002",
+      "description": "Impacket framework named pipe communication patterns \u2014 smbexec and psexec.py create characteristic service names and pipes.",
+      "key_conditions": "PipeName matches \\\\pipe\\\\ATSVC or patterns from Impacket SMBExec default service naming; Image=services.exe creating pipe with random-looking name",
+      "false_positives": "Legitimate Windows service communication",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/pipe_created/pipe_created_win_psexec.yml"
+    },
+    {
+      "id": "DB-100",
+      "title": "DNS Query for Tor Onion Address",
+      "sysmon_eids": [
+        22
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Proxy: Multi-hop Proxy",
+      "technique_id": "T1090.003",
+      "description": "DNS query for .onion domain indicating Tor usage \u2014 C2 over Tor or dark web resource access.",
+      "key_conditions": "QueryName ends with .onion; any process",
+      "false_positives": "Legitimate Tor Browser use (rare in enterprise)",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/dns_query/dns_query_win_susp_dns_tor.yml"
+    },
+    {
+      "id": "DB-101",
+      "title": "Crypto Miner DNS Query",
+      "sysmon_eids": [
+        22
+      ],
+      "tactic": "Impact",
+      "tactic_id": "TA0040",
+      "technique": "Resource Hijacking",
+      "technique_id": "T1496",
+      "description": "DNS queries to known cryptocurrency mining pool domains \u2014 cryptojacking activity.",
+      "key_conditions": "QueryName ends with known mining pool domains (xmrpool.eu, pool.minexmr.com, miningpoolhub.com, nanopool.org, etc.)",
+      "false_positives": "Legitimate cryptocurrency trading or monitoring software",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/dns_query/dns_query_win_susp_crypto_mining.yml"
+    },
+    {
+      "id": "DB-102",
+      "title": "Dynamic DNS Resolution",
+      "sysmon_eids": [
+        22
+      ],
+      "tactic": "Command and Control",
+      "tactic_id": "TA0011",
+      "technique": "Dynamic Resolution",
+      "technique_id": "T1568",
+      "description": "DNS queries to dynamic DNS providers (duckdns.org, no-ip.com, ddns.net, hopto.org) \u2014 C2 infrastructure using free dynamic DNS to avoid blocklisting.",
+      "key_conditions": "QueryName ends with duckdns.org or no-ip.com or ddns.net or hopto.org or redirectme.net or serveftp.com",
+      "false_positives": "Legitimate home-lab dynamic DNS use",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/dns_query/dns_query_win_susp_dyndns.yml"
+    },
+    {
+      "id": "DB-103",
+      "title": "Microsoft Office Product DNS Anomaly",
+      "sysmon_eids": [
+        22
+      ],
+      "tactic": "Discovery",
+      "tactic_id": "TA0007",
+      "technique": "System Information Discovery",
+      "technique_id": "T1082",
+      "description": "Unusual DNS query from Office applications to non-Microsoft domains \u2014 potential document-embedded C2 beacon.",
+      "key_conditions": "Image in [WINWORD.EXE, EXCEL.EXE, POWERPNT.EXE]; QueryName not ending with microsoft.com or office.com or live.com or windows.com",
+      "false_positives": "Legitimate Office template and content checks",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/dns_query/dns_query_win_susp_lolbin.yml"
+    },
+    {
+      "id": "DB-104",
+      "title": "Known LOLDriver Hash Loaded",
+      "sysmon_eids": [
+        6
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Exploit Driver",
+      "technique_id": "T1068",
+      "description": "Driver with known-vulnerable hash from loldrivers.io blocklist \u2014 BYOVD attack using legitimate signed-but-vulnerable driver.",
+      "key_conditions": "ImageLoaded hash (SHA256/MD5) matches loldrivers.io blocklist; Signed=true but known vulnerable",
+      "false_positives": "Very rare \u2014 legitimate old driver on legacy system",
+      "level": "critical",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/driver_load/driver_load_win_vuln_drivers.yml"
+    },
+    {
+      "id": "DB-105",
+      "title": "Windows Kernel Vulnerable Driver Load",
+      "sysmon_eids": [
+        6
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Rootkit",
+      "technique_id": "T1014",
+      "description": "Known kernel vulnerability exploitation driver loaded \u2014 commonly seen in EDR killer tools (AuKill, Terminator, etc.).",
+      "key_conditions": "ImageLoaded matches known EDR-killer driver filenames or hashes (ProcExp.sys from expired cert, truesight.sys, daxin.sys)",
+      "false_positives": "No legitimate use of these specific drivers",
+      "level": "critical",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/driver_load/driver_load_win_vuln_drivers.yml"
+    },
+    {
+      "id": "DB-106",
+      "title": "WMI Persistence via MOF File",
+      "sysmon_eids": [
+        19,
+        20,
+        21
+      ],
+      "tactic": "Persistence",
+      "tactic_id": "TA0003",
+      "technique": "Windows Management Instrumentation",
+      "technique_id": "T1546.003",
+      "description": "WMI event subscription created via MOF (Managed Object Format) file compilation \u2014 less common but effective persistence method.",
+      "key_conditions": "EventType=CreateInstance; Operation contains __EventFilter or __EventConsumer; Consumer type CommandLineEventConsumer with MofFilePath",
+      "false_positives": "Legitimate WMI management through MOF files (enterprise management software)",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/wmi_event/wmi_event_susp_wmi_filter.yml"
+    },
+    {
+      "id": "DB-107",
+      "title": "SilentCleanup Scheduled Task Abuse for Persistence",
+      "sysmon_eids": [
+        19,
+        20
+      ],
+      "tactic": "Persistence",
+      "tactic_id": "TA0003",
+      "technique": "Scheduled Task/Job",
+      "technique_id": "T1053.005",
+      "description": "WMI event consumer triggering SilentCleanup task for UAC bypass or persistence \u2014 well-known auto-elevating task abuse.",
+      "key_conditions": "Consumer Destination contains schtasks and SilentCleanup; or Filter query targets SilentCleanup execution window",
+      "false_positives": "No legitimate use of WMI to trigger SilentCleanup",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/wmi_event/wmi_event_susp_wmi_consumer.yml"
+    },
+    {
+      "id": "DB-108",
+      "title": "Herpaderping Process Tampering",
+      "sysmon_eids": [
+        25
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Process Injection: Process Doppelg\u00e4nging",
+      "technique_id": "T1055.013",
+      "description": "Process herpaderping \u2014 writing malicious content to file after section is mapped, before security tools scan it. EID 25 Type='Image is locked for access'.",
+      "key_conditions": "EventID=25; Type='Image is locked for access'",
+      "false_positives": "None \u2014 this is a clear evasion technique",
+      "level": "critical",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_tampering/proc_tampering_win_process_image_tamper.yml"
+    },
+    {
+      "id": "DB-109",
+      "title": "Process Hollowing via Svchost",
+      "sysmon_eids": [
+        25
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Process Injection: Process Hollowing",
+      "technique_id": "T1055.012",
+      "description": "Process hollowing targeting svchost.exe \u2014 malicious code running inside the service host while appearing legitimate. EID 25 Type='Image is replaced'.",
+      "key_conditions": "EventID=25; Type='Image is replaced'; Image ends with svchost.exe or any trusted system binary",
+      "false_positives": "Very rare legitimate scenario",
+      "level": "critical",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/process_tampering/proc_tampering_win_process_image_tamper.yml"
+    },
+    {
+      "id": "DB-110",
+      "title": "Potential Ransomware Shadow Copy Raw Access",
+      "sysmon_eids": [
+        9
+      ],
+      "tactic": "Impact",
+      "tactic_id": "TA0040",
+      "technique": "Inhibit System Recovery",
+      "technique_id": "T1490",
+      "description": "Raw access to shadow copy volume \u2014 ransomware reading VSS to find and delete backup copies.",
+      "key_conditions": "Device contains HarddiskVolumeShadowCopy; Image not in backup software allowlist",
+      "false_positives": "Legitimate backup software accessing shadow copies",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/raw_access_thread/rawaccess_win_rawaccess_volume_read.yml"
+    },
+    {
+      "id": "DB-111",
+      "title": "Timestomp via Powershell Set-Date",
+      "sysmon_eids": [
+        2
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Indicator Removal: Timestomp",
+      "technique_id": "T1070.006",
+      "description": "PowerShell Set-Date or .NET [System.IO.File]::SetCreationTime used to modify file timestamps \u2014 scripted timestomping.",
+      "key_conditions": "Image ends with powershell.exe; CommandLine contains Set-Date or SetCreationTime or SetLastWriteTime or SetLastAccessTime",
+      "false_positives": "Legitimate file management scripts",
+      "level": "medium",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_creation_time_change.yml"
+    },
+    {
+      "id": "DB-112",
+      "title": "Backup Catalog Deletion",
+      "sysmon_eids": [
+        23,
+        26
+      ],
+      "tactic": "Impact",
+      "tactic_id": "TA0040",
+      "technique": "Inhibit System Recovery",
+      "technique_id": "T1490",
+      "description": "Deletion of Windows backup catalog files \u2014 attackers delete to prevent recovery from Windows Backup.",
+      "key_conditions": "TargetFilename ends with .wbcat or contains WindowsImageBackup or BCD or boot",
+      "false_positives": "No legitimate reason to delete backup catalog outside administrative tasks",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_delete_win_delete_shadow_volume.yml"
+    },
+    {
+      "id": "DB-113",
+      "title": "Log File Deletion",
+      "sysmon_eids": [
+        23,
+        26
+      ],
+      "tactic": "Defense Evasion",
+      "tactic_id": "TA0005",
+      "technique": "Indicator Removal: Clear Windows Event Logs",
+      "technique_id": "T1070.001",
+      "description": "Deletion of Windows event log files (.evtx) or log directories \u2014 evidence destruction.",
+      "key_conditions": "TargetFilename ends with .evtx; or TargetFilename path contains \\Windows\\System32\\winevt\\Logs\\",
+      "false_positives": "No legitimate reason to directly delete .evtx files (use wevtutil cl instead)",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_delete_win_susp_file_deletion.yml"
+    },
+    {
+      "id": "DB-114",
+      "title": "Executable File Created by Script Interpreter",
+      "sysmon_eids": [
+        29
+      ],
+      "tactic": "Execution",
+      "tactic_id": "TA0002",
+      "technique": "Command and Scripting Interpreter",
+      "technique_id": "T1059",
+      "description": "PE executable created by scripting engine (wscript, cscript, mshta) \u2014 dropper script delivering payload.",
+      "key_conditions": "EventID=29; Image ends with wscript.exe or cscript.exe or mshta.exe or powershell.exe; TargetFilename ends with .exe or .dll",
+      "false_positives": "Legitimate installers written as scripts that extract executables",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_creation_in_temp_folder.yml"
+    },
+    {
+      "id": "DB-115",
+      "title": "Executable Written to Suspicious Path by Process",
+      "sysmon_eids": [
+        29
+      ],
+      "tactic": "Persistence",
+      "tactic_id": "TA0003",
+      "technique": "Boot or Logon Autostart Execution",
+      "technique_id": "T1547",
+      "description": "PE written directly to an autostart location \u2014 direct persistence without registry modification.",
+      "key_conditions": "EventID=29; TargetFilename path in [\\Startup\\, \\Start Menu\\, C:\\Windows\\, C:\\Windows\\System32\\]; Image not in [known installers, TrustedInstaller.exe, System]",
+      "false_positives": "Legitimate software installation to system directories",
+      "level": "high",
+      "curated": false,
+      "sigma_url": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/file/file_event_win_susp_creation_in_public_folder.yml"
+    }
+  ],
+  "event_to_rules": {
+    "1": [
+      "SYS-001",
+      "SYS-002",
+      "SYS-003",
+      "SYS-004",
+      "SYS-005",
+      "SYS-006",
+      "SYS-007",
+      "SYS-008",
+      "SYS-009",
+      "SYS-010",
+      "SYS-011",
+      "SYS-012",
+      "SYS-013",
+      "SYS-041",
+      "SYS-042",
+      "SYS-043",
+      "SYS-044",
+      "SYS-045",
+      "SYS-046",
+      "SYS-047",
+      "SYS-048",
+      "SYS-049",
+      "SYS-050",
+      "SYS-051",
+      "SYS-052",
+      "SYS-053",
+      "DB-001",
+      "DB-002",
+      "DB-003",
+      "DB-004",
+      "DB-005",
+      "DB-006",
+      "DB-007",
+      "DB-008",
+      "DB-009",
+      "DB-010",
+      "DB-011",
+      "DB-012",
+      "DB-013",
+      "DB-014",
+      "DB-015",
+      "DB-016",
+      "DB-017",
+      "DB-018",
+      "DB-019",
+      "DB-020",
+      "DB-021",
+      "DB-022",
+      "DB-023",
+      "DB-024",
+      "DB-025",
+      "DB-026",
+      "DB-027",
+      "DB-028",
+      "DB-029",
+      "DB-030",
+      "DB-031",
+      "DB-032",
+      "DB-033",
+      "DB-034",
+      "DB-035",
+      "DB-036",
+      "DB-037",
+      "DB-038",
+      "DB-039",
+      "DB-040",
+      "DB-041",
+      "DB-042",
+      "DB-043",
+      "DB-044",
+      "DB-045",
+      "DB-046",
+      "DB-047",
+      "DB-048",
+      "DB-049",
+      "DB-050",
+      "DB-051",
+      "DB-052",
+      "DB-053",
+      "DB-054",
+      "DB-055",
+      "DB-056",
+      "DB-057",
+      "DB-058",
+      "DB-059",
+      "DB-060",
+      "DB-061",
+      "DB-062",
+      "DB-063",
+      "DB-064",
+      "DB-065",
+      "DB-066",
+      "DB-067",
+      "DB-068",
+      "DB-069",
+      "DB-070"
+    ],
+    "3": [
+      "SYS-014",
+      "SYS-015",
+      "SYS-016",
+      "SYS-017",
+      "SYS-054",
+      "SYS-055",
+      "SYS-056",
+      "SYS-057",
+      "DB-071",
+      "DB-072",
+      "DB-073",
+      "DB-074",
+      "DB-075",
+      "DB-076"
+    ],
+    "7": [
+      "SYS-018",
+      "SYS-019",
+      "SYS-058",
+      "SYS-059",
+      "SYS-060",
+      "DB-077",
+      "DB-078",
+      "DB-079"
+    ],
+    "8": [
+      "SYS-020",
+      "SYS-021",
+      "SYS-061"
+    ],
+    "10": [
+      "SYS-022",
+      "SYS-023",
+      "SYS-062",
+      "DB-080",
+      "DB-081"
+    ],
+    "11": [
+      "SYS-024",
+      "SYS-025",
+      "SYS-063",
+      "SYS-064",
+      "SYS-065",
+      "DB-082",
+      "DB-083",
+      "DB-084",
+      "DB-085",
+      "DB-086"
+    ],
+    "12": [
+      "SYS-026",
+      "SYS-028",
+      "SYS-066",
+      "SYS-068",
+      "SYS-069",
+      "DB-087",
+      "DB-091",
+      "DB-094",
+      "DB-095"
+    ],
+    "13": [
+      "SYS-026",
+      "SYS-027",
+      "SYS-028",
+      "SYS-029",
+      "SYS-066",
+      "SYS-067",
+      "SYS-068",
+      "SYS-069",
+      "DB-087",
+      "DB-088",
+      "DB-089",
+      "DB-090",
+      "DB-091",
+      "DB-092",
+      "DB-093",
+      "DB-094",
+      "DB-095"
+    ],
+    "15": [
+      "SYS-030",
+      "SYS-072",
+      "SYS-073",
+      "DB-096",
+      "DB-097"
+    ],
+    "17": [
+      "SYS-031",
+      "SYS-032",
+      "DB-098",
+      "DB-099"
+    ],
+    "18": [
+      "SYS-031",
+      "SYS-032",
+      "DB-098",
+      "DB-099"
+    ],
+    "19": [
+      "SYS-033",
+      "DB-106",
+      "DB-107"
+    ],
+    "20": [
+      "SYS-033",
+      "DB-106",
+      "DB-107"
+    ],
+    "21": [
+      "SYS-033",
+      "DB-106"
+    ],
+    "22": [
+      "SYS-034",
+      "SYS-035",
+      "SYS-074",
+      "SYS-075",
+      "DB-100",
+      "DB-101",
+      "DB-102",
+      "DB-103"
+    ],
+    "6": [
+      "SYS-036",
+      "SYS-037",
+      "DB-104",
+      "DB-105"
+    ],
+    "25": [
+      "SYS-038",
+      "DB-108",
+      "DB-109"
+    ],
+    "9": [
+      "SYS-039",
+      "SYS-080",
+      "DB-110"
+    ],
+    "4": [
+      "SYS-040"
+    ],
+    "16": [
+      "SYS-040"
+    ],
+    "2": [
+      "SYS-070",
+      "SYS-071",
+      "DB-111"
+    ],
+    "23": [
+      "SYS-076",
+      "SYS-077",
+      "DB-112",
+      "DB-113"
+    ],
+    "26": [
+      "SYS-076",
+      "SYS-077",
+      "DB-112",
+      "DB-113"
+    ],
+    "29": [
+      "SYS-078",
+      "SYS-079",
+      "DB-114",
+      "DB-115"
+    ]
+  }
+}

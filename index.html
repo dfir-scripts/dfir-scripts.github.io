@@ -31,10 +31,6 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,11,15,.97);
 .nav-logo{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);
   display:flex;align-items:center;gap:8px;text-decoration:none}
 .nav-logo::before{content:'⊞';font-size:16px}
-.nav-links{display:flex;gap:4px}
-.nav-link{font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;
-  padding:5px 10px;border-radius:3px;border:1px solid transparent;transition:all .15s}
-.nav-link:hover{color:var(--text);background:var(--surface2);border-color:var(--border)}
 .nav-gh{font-family:var(--mono);font-size:11px;color:var(--accent2);text-decoration:none;
   padding:5px 12px;border-radius:3px;border:1px solid rgba(124,92,252,.3);
   background:rgba(124,92,252,.07);transition:all .15s}
@@ -63,7 +59,8 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,11,15,.97);
 
 /* ── TOOL CARDS ── */
 .tools-section{position:relative;z-index:1;padding:0 40px 80px;max-width:1100px;margin:0 auto}
-.tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:980px){.tools-grid{grid-template-columns:1fr}}
 
 .tool-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;
   overflow:hidden;text-decoration:none;color:inherit;
@@ -94,23 +91,13 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,11,15,.97);
 .mc-orange{background:rgba(255,107,53,.08);color:#ff6b35;border:1px solid rgba(255,107,53,.2)}
 .mc-muted{background:rgba(100,116,139,.06);color:var(--muted);border:1px solid var(--border)}
 
-.tool-card-footer{padding:14px 24px;border-top:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
-  background:rgba(0,0,0,.2)}
+.tool-card-footer{padding:0;margin-top:14px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px}
 .tool-count{font-family:var(--mono);font-size:11px;color:var(--muted)}
 .tool-count strong{font-size:13px}
 .tool-card.registry .tool-count strong{color:var(--accent)}
 .tool-card.secevents .tool-count strong{color:#4ade80}
 .tool-card.sysmon .tool-count strong{color:#a78bfa}
-.tool-launch{font-family:var(--mono);font-size:10px;font-weight:700;
-  padding:5px 12px;border-radius:3px;transition:all .15s;white-space:nowrap}
-.tool-card.registry .tool-launch{color:var(--accent);border:1px solid rgba(0,229,255,.3);background:rgba(0,229,255,.06)}
-.tool-card.registry:hover .tool-launch{background:rgba(0,229,255,.12)}
-.tool-card.secevents .tool-launch{color:#4ade80;border:1px solid rgba(74,222,128,.3);background:rgba(74,222,128,.06)}
-.tool-card.secevents:hover .tool-launch{background:rgba(74,222,128,.12)}
-.tool-card.sysmon .tool-launch{color:#a78bfa;border:1px solid rgba(167,139,250,.3);background:rgba(167,139,250,.06)}
-.tool-card.sysmon:hover .tool-launch{background:rgba(167,139,250,.12)}
-
 /* ── ACCENT LINE on card top ── */
 .tool-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
 .tool-card.registry::before{background:linear-gradient(90deg,var(--accent),transparent)}
@@ -169,27 +156,25 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);
 
 @media(max-width:700px){
   nav{padding:0 16px}
-  .nav-links{display:none}
-  .hero,.tools-section,.about-section,.sources-section{padding-left:16px;padding-right:16px}
+    .hero,.tools-section,.about-section,.sources-section{padding-left:16px;padding-right:16px}
   .hero{padding-top:48px}
   .about-grid{grid-template-columns:1fr}
   footer{padding:20px 16px;flex-direction:column;align-items:flex-start}
 }
 
-.tool-card.registry a[download]:hover{color:var(--accent)!important;border-color:rgba(0,229,255,.3)!important}
-.tool-card.secevents a[download]:hover{color:#4ade80!important;border-color:rgba(74,222,128,.3)!important}
-.tool-card.sysmon a[download]:hover{color:#a78bfa!important;border-color:rgba(167,139,250,.3)!important}
+
+.tool-download{font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 12px;
+  border-radius:3px;text-decoration:none;transition:all .15s;white-space:nowrap;
+  color:var(--muted);border:1px solid var(--border);background:var(--surface2)}
+.tool-card.registry .tool-download:hover{color:var(--accent);border-color:rgba(0,229,255,.3)}
+.tool-card.secevents .tool-download:hover{color:#4ade80;border-color:rgba(74,222,128,.3)}
+.tool-card.sysmon .tool-download:hover{color:#a78bfa;border-color:rgba(167,139,250,.3)}
 </style>
 </head>
 <body>
 
 <nav>
   <a href="/" class="nav-logo">dfir-scripts</a>
-  <div class="nav-links">
-    <a href="https://dfir-scripts.github.io/Windows-Registry-Artifacts/" class="nav-link">Registry</a>
-    <a href="https://dfir-scripts.github.io/SecurityEventIDs/" class="nav-link">Security Events</a>
-    <a href="https://dfir-scripts.github.io/SysmonIDs/" class="nav-link">Sysmon</a>
-  </div>
   <a href="https://github.com/dfir-scripts" target="_blank" class="nav-gh">GitHub ↗</a>
 </nav>
 
@@ -223,7 +208,7 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);
   <div class="tools-grid">
 
     <!-- REGISTRY -->
-    <a href="https://dfir-scripts.github.io/Windows-Registry-Artifacts/" class="tool-card registry">
+    <a href="registry/" class="tool-card registry">
       <div class="tool-card-top">
         <span class="tool-icon">🗂️</span>
         <div class="tool-name">Windows Registry<br>Artifact Explorer</div>
@@ -239,15 +224,15 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);
           <span class="meta-chip mc-muted">RECmd · SBECmd</span>
           <span class="meta-chip mc-muted">AmcacheParser</span>
         </div>
-      </div>
-      <div class="tool-card-footer">
-        <div class="tool-count"><strong>587</strong> artifacts across 20 categories</div>
-        <div style="display:flex;gap:6px;align-items:center"><a href="https://github.com/dfir-scripts/Windows-Registry-Artifacts/raw/main/index.html" download="registry_artifacts.html" onclick="event.stopPropagation()" style="font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 10px;border-radius:3px;text-decoration:none;transition:all .15s;white-space:nowrap;color:var(--muted);border:1px solid var(--border);background:var(--surface2)">⬇ Download</a><span class="tool-launch">Open Tool ↗</span></div>
+        <div class="tool-card-footer">
+          <div class="tool-count"><strong>587</strong> artifacts across 20 categories</div>
+          <a href="registry/index.html" download="registry_artifacts.html" onclick="event.stopPropagation()" class="tool-download">⬇ Download</a>
+        </div>
       </div>
     </a>
 
     <!-- SECURITY EVENTS -->
-    <a href="https://dfir-scripts.github.io/SecurityEventIDs/" class="tool-card secevents">
+    <a href="security_event_ids.html" class="tool-card secevents">
       <div class="tool-card-top">
         <span class="tool-icon">🔑</span>
         <div class="tool-name">Windows Security<br>Event ID Reference</div>
@@ -262,15 +247,15 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);
           <span class="meta-chip mc-muted">DCSync</span>
           <span class="meta-chip mc-muted">Pass-the-Hash</span>
         </div>
-      </div>
-      <div class="tool-card-footer">
-        <div class="tool-count"><strong>399</strong> event IDs · Appendix L criticality</div>
-        <div style="display:flex;gap:6px;align-items:center"><a href="https://github.com/dfir-scripts/SecurityEventIDs/raw/main/index.html" download="security_event_ids.html" onclick="event.stopPropagation()" style="font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 10px;border-radius:3px;text-decoration:none;transition:all .15s;white-space:nowrap;color:var(--muted);border:1px solid var(--border);background:var(--surface2)">⬇ Download</a><span class="tool-launch">Open Tool ↗</span></div>
+        <div class="tool-card-footer">
+          <div class="tool-count"><strong>399</strong> event IDs · Appendix L criticality</div>
+          <a href="security_event_ids.html" download="security_event_ids.html" onclick="event.stopPropagation()" class="tool-download">⬇ Download</a>
+        </div>
       </div>
     </a>
 
     <!-- SYSMON -->
-    <a href="https://dfir-scripts.github.io/SysmonIDs/" class="tool-card sysmon">
+    <a href="sysmon/" class="tool-card sysmon">
       <div class="tool-card-top">
         <span class="tool-icon">🔵</span>
         <div class="tool-name">Sysmon<br>Event ID Reference</div>
@@ -285,10 +270,129 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);
           <span class="meta-chip mc-muted">Config Guidance</span>
           <span class="meta-chip mc-muted">BYOVD · Hollowing</span>
         </div>
+        <div class="tool-card-footer">
+          <div class="tool-count"><strong>30</strong> event IDs · 195 detection rules</div>
+          <a href="sysmon/index.html" download="sysmon_event_ids.html" onclick="event.stopPropagation()" class="tool-download">⬇ Download</a>
+        </div>
       </div>
-      <div class="tool-card-footer">
-        <div class="tool-count"><strong>30</strong> event IDs · 195 detection rules</div>
-        <div style="display:flex;gap:6px;align-items:center"><a href="https://github.com/dfir-scripts/SysmonIDs/raw/main/index.html" download="sysmon_event_ids.html" onclick="event.stopPropagation()" style="font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 10px;border-radius:3px;text-decoration:none;transition:all .15s;white-space:nowrap;color:var(--muted);border:1px solid var(--border);background:var(--surface2)">⬇ Download</a><span class="tool-launch">Open Tool ↗</span></div>
+    </a>
+
+  </div>
+</section>
+
+<!-- ── DIVIDER ── -->
+<div class="divider">
+  <div class="divider-line"></div>
+  <span class="divider-label">Quick References</span>
+  <div class="divider-line"></div>
+</div>
+
+<!-- ── QUICK REFS ── -->
+<section class="tools-section">
+  <p style="color:var(--muted);font-size:13px;max-width:700px;margin:0 auto 20px;text-align:center">Focused, cross-channel references for activity types that span multiple log sources — faster to scan than the full explorers above.</p>
+  <div class="tools-grid" style="grid-template-columns:repeat(3,1fr)">
+
+    <a href="rdp_event_reference.html" class="tool-card secevents" style="padding:0">
+      <div class="tool-card-top">
+        <span class="tool-icon">🖥️</span>
+        <div class="tool-name">RDP Event Reference</div>
+        <div class="tool-tagline">4 Log Channels · Lateral Movement</div>
+        <p class="tool-desc">Security, TerminalServices-RemoteConnectionManager, LocalSessionManager, and RDPCoreTS. Brute force, session hijacking, mass lateral movement.</p>
+        <div class="tool-meta">
+          <span class="meta-chip mc-green">15 Events</span>
+          <span class="meta-chip mc-orange">6 Sigma Rules</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="firewall_event_reference.html" class="tool-card registry" style="padding:0">
+      <div class="tool-card-top">
+        <span class="tool-icon">🧱</span>
+        <div class="tool-name">Windows Firewall Event Reference</div>
+        <div class="tool-tagline">3 Log Sources · Defense Evasion</div>
+        <p class="tool-desc">Security rule-change events, WFP connection/bind events, and the dedicated Firewall operational channel.</p>
+        <div class="tool-meta">
+          <span class="meta-chip mc-cyan">15 Events</span>
+          <span class="meta-chip mc-orange">6 Sigma Rules</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="smb_event_reference.html" class="tool-card sysmon" style="padding:0">
+      <div class="tool-card-top">
+        <span class="tool-icon">📁</span>
+        <div class="tool-name">SMB Event Reference</div>
+        <div class="tool-tagline">2 Log Sources · Credential Access</div>
+        <p class="tool-desc">Share access events plus SMBClient operational log. Lateral movement, NTDS.dit exfiltration, IPC$ enumeration.</p>
+        <div class="tool-meta">
+          <span class="meta-chip mc-purple">10 Events</span>
+          <span class="meta-chip mc-orange">6 Sigma Rules</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="scheduled_task_event_reference.html" class="tool-card secevents" style="padding:0">
+      <div class="tool-card-top">
+        <span class="tool-icon">⏱️</span>
+        <div class="tool-name">Scheduled Task Event Reference</div>
+        <div class="tool-tagline">2 Log Channels · Persistence</div>
+        <p class="tool-desc">Security audit events plus the always-on TaskScheduler/Operational log. Task hijacking and persistence detection.</p>
+        <div class="tool-meta">
+          <span class="meta-chip mc-green">12 Events</span>
+          <span class="meta-chip mc-orange">6 Sigma Rules</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="bits_event_reference.html" class="tool-card registry" style="padding:0">
+      <div class="tool-card-top">
+        <span class="tool-icon">📡</span>
+        <div class="tool-name">BITS Event Reference</div>
+        <div class="tool-tagline">1 Log Channel · Fileless Persistence</div>
+        <p class="tool-desc">Bits-Client/Operational log. Stealthy downloads, exfiltration, and SetNotifyCmdLine persistence.</p>
+        <div class="tool-meta">
+          <span class="meta-chip mc-cyan">7 Events</span>
+          <span class="meta-chip mc-orange">6 Sigma Rules</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="defender_event_reference.html" class="tool-card sysmon" style="padding:0">
+      <div class="tool-card-top">
+        <span class="tool-icon">🛡️</span>
+        <div class="tool-name">Windows Defender Event Reference</div>
+        <div class="tool-tagline">2 Log Sources · AV Evasion</div>
+        <p class="tool-desc">Defender operational log plus Security Center corroboration. Detection events, AV-disable evasion, Tamper Protection.</p>
+        <div class="tool-meta">
+          <span class="meta-chip mc-purple">12 Events</span>
+          <span class="meta-chip mc-orange">6 Sigma Rules</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="powershell_event_reference.html" class="tool-card secevents" style="padding:0">
+      <div class="tool-card-top">
+        <span class="tool-icon">💻</span>
+        <div class="tool-name">PowerShell Event Reference</div>
+        <div class="tool-tagline">3 Log Channels · Obfuscation Detection</div>
+        <p class="tool-desc">Script block/module logging, legacy log, and the separate PowerShell 7 (Core) channel. AMSI bypass, credential access, download cradles.</p>
+        <div class="tool-meta">
+          <span class="meta-chip mc-green">11 Events</span>
+          <span class="meta-chip mc-orange">6 Sigma Rules</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="wmi_activity_event_reference.html" class="tool-card registry" style="padding:0">
+      <div class="tool-card-top">
+        <span class="tool-icon">🧩</span>
+        <div class="tool-name">WMI-Activity Event Reference</div>
+        <div class="tool-tagline">1 Log Channel · No Sysmon Required</div>
+        <p class="tool-desc">Native WMI-Activity/Operational log, available on every host by default. Permanent event consumers, remote execution, polling beacons.</p>
+        <div class="tool-meta">
+          <span class="meta-chip mc-cyan">5 Events</span>
+          <span class="meta-chip mc-orange">6 Sigma Rules</span>
+        </div>
       </div>
     </a>
 
@@ -329,8 +433,8 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);
       <p>Each tool works fully offline — download the HTML file and open it in any browser. Filters, search, expand/collapse, copy buttons, and all cross-references work without an internet connection (Google Fonts degrades gracefully to system fonts).</p>
       <p>The Registry and Sysmon tools are backed by versioned JSON schema files designed to be updated independently of the HTML as new artifacts, techniques, and detection rules become available:</p>
       <p>
-        <a href="https://github.com/dfir-scripts/Windows-Registry-Artifacts/blob/main/windows_registry_artifacts_schema_v0.1.json" target="_blank" style="font-family:var(--mono);font-size:11px;color:var(--accent);display:inline-block;margin:4px 0">windows_registry_artifacts_schema_v0.1.json</a><br>
-        <a href="https://github.com/dfir-scripts/SysmonIDs/blob/main/sysmon_rules_complete.json" target="_blank" style="font-family:var(--mono);font-size:11px;color:#a78bfa;display:inline-block;margin:4px 0">sysmon_rules_complete.json</a>
+        <a href="https://github.com/dfir-scripts/dfir-scripts.github.io/blob/main/registry/windows_registry_artifacts_schema_v0.1.json" target="_blank" style="font-family:var(--mono);font-size:11px;color:var(--accent);display:inline-block;margin:4px 0">windows_registry_artifacts_schema_v0.1.json</a><br>
+        <a href="https://github.com/dfir-scripts/dfir-scripts.github.io/blob/main/sysmon/sysmon_rules_complete.json" target="_blank" style="font-family:var(--mono);font-size:11px;color:#a78bfa;display:inline-block;margin:4px 0">sysmon_rules_complete.json</a>
       </p>
       <p>Security Event IDs are well-documented in <a href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/appendix-l--events-to-monitor" target="_blank" style="color:var(--accent4)">Microsoft Appendix L</a> — no separate schema file is maintained for that reference.</p>
     </div>
