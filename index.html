@@ -226,7 +226,7 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);
         </div>
         <div class="tool-card-footer">
           <div class="tool-count"><strong>587</strong> artifacts across 20 categories</div>
-          <span onclick="event.stopPropagation();downloadFile('registry/index.html','registry_artifacts.html')" class="tool-download" role="button" tabindex="0">⬇ Download</span>
+          <span onclick="event.stopPropagation();downloadFiles([['registry/index.html','registry_artifacts.html'],['registry/windows_registry_artifacts_schema_v0.1.json','windows_registry_artifacts_schema_v0.1.json']])" class="tool-download" role="button" tabindex="0">⬇ Download</span>
         </div>
       </div>
     </a>
@@ -272,7 +272,7 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);
         </div>
         <div class="tool-card-footer">
           <div class="tool-count"><strong>30</strong> event IDs · 195 detection rules</div>
-          <span onclick="event.stopPropagation();downloadFile('sysmon/index.html','sysmon_event_ids.html')" class="tool-download" role="button" tabindex="0">⬇ Download</span>
+          <span onclick="event.stopPropagation();downloadFiles([['sysmon/index.html','sysmon_event_ids.html'],['sysmon/sysmon_rules_complete.json','sysmon_rules_complete.json']])" class="tool-download" role="button" tabindex="0">⬇ Download</span>
         </div>
       </div>
     </a>
@@ -497,6 +497,11 @@ function downloadFile(url, filename) {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+}
+function downloadFiles(pairs) {
+  pairs.forEach(([url, filename], i) => {
+    setTimeout(() => downloadFile(url, filename), i * 400);
+  });
 }
 </script>
 </body>
