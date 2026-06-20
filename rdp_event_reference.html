@@ -158,6 +158,9 @@ mark{background:#39d35330;color:var(--accent);border-radius:2px;padding:0 2px}
   .dblock:nth-child(odd){border-right:none}
   header,.main,.sigma-page{padding-left:16px;padding-right:16px}
 }
+
+.header-badge{text-decoration:none;cursor:pointer;transition:opacity .15s}
+.header-badge:hover{opacity:.75}
 </style>
 </head>
 <body>
@@ -171,7 +174,7 @@ mark{background:#39d35330;color:var(--accent);border-radius:2px;padding:0 2px}
 <div class="tab-content active" id="tab-events">
 <header>
   <div class="header-inner">
-    <div class="header-badge">DFIR Reference v0.1</div>
+    <a href="index.html" class="header-badge" title="Back to DFIR Scripts home">DFIR Reference v0.1</a>
     <h1>RDP <em>Event Reference</em></h1>
     <p class="header-sub">Cross-channel reference for Remote Desktop Protocol forensic analysis. Covers Security.evtx, TerminalServices-RemoteConnectionManager, TerminalServices-LocalSessionManager, and RDPCoreTS operational logs.</p>
     <div class="stats-row">

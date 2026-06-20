@@ -158,6 +158,9 @@ mark{background:#2dd4bf30;color:var(--accent);border-radius:2px;padding:0 2px}
   .dblock:nth-child(odd){border-right:none}
   header,.main,.sigma-page{padding-left:16px;padding-right:16px}
 }
+
+.header-badge{text-decoration:none;cursor:pointer;transition:opacity .15s}
+.header-badge:hover{opacity:.75}
 </style>
 </head>
 <body>
@@ -171,7 +174,7 @@ mark{background:#2dd4bf30;color:var(--accent);border-radius:2px;padding:0 2px}
 <div class="tab-content active" id="tab-events">
 <header>
   <div class="header-inner">
-    <div class="header-badge">DFIR Reference v0.1</div>
+    <a href="index.html" class="header-badge" title="Back to DFIR Scripts home">DFIR Reference v0.1</a>
     <h1>Scheduled Task <em>Event Reference</em></h1>
     <p class="header-sub">Cross-channel reference for Windows Scheduled Task forensic analysis. Covers Security.evtx audit events (require advanced audit policy) and the always-on TaskScheduler/Operational log. Focused on persistence, task hijacking, and lateral movement via the Task Scheduler.</p>
     <div class="stats-row">

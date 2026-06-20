@@ -261,6 +261,9 @@ mark{background:rgba(0,229,255,.2);color:var(--accent);border-radius:2px;padding
 .src-card.db-result::before{content:'DB';font-family:var(--mono);font-size:7px;font-weight:700;color:#ff6b35;background:rgba(255,107,53,.1);padding:1px 4px;border-radius:2px;position:absolute;top:8px;right:36px}
 .src-card.db-result{position:relative}
 
+
+.header-badge{text-decoration:none;cursor:pointer;transition:opacity .15s}
+.header-badge:hover{opacity:.75}
 </style>
 </head>
 <body>
@@ -274,7 +277,7 @@ mark{background:rgba(0,229,255,.2);color:var(--accent);border-radius:2px;padding
 <div class="tab-content active" id="tab-events">
 <header>
   <div class="header-inner">
-    <div class="header-badge">DFIR Reference v0.1</div>
+    <a href="../index.html" class="header-badge" title="Back to DFIR Scripts home">DFIR Reference v0.1</a>
     <h1>Sysmon <em>Event ID Reference</em></h1>
     <p class="header-sub">Complete reference for all Sysmon v15.2 event IDs sourced from <a href="https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon" target="_blank" style="color:var(--accent4)">Microsoft Sysinternals documentation</a>. Includes key fields, forensic value, noise level, and configuration guidance. <strong style="color:var(--accent4)">Log channel: Microsoft-Windows-Sysmon/Operational</strong></p>
     <div class="stats-row">

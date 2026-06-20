@@ -356,6 +356,9 @@ mark{background:rgba(0,229,255,.2);color:var(--accent);border-radius:2px;padding
 .card.portable-main-card.expanded{border-color:#a78bfa}
 .tsb-notable{background:rgba(245,158,11,.1);color:#f59e0b;border:1px solid rgba(245,158,11,.2)}
 .tsb-portable{background:rgba(167,139,250,.1);color:#a78bfa;border:1px solid rgba(167,139,250,.2)}
+
+.header-badge{text-decoration:none;cursor:pointer;transition:opacity .15s}
+.header-badge:hover{opacity:.75}
 </style>
 </head>
 <body>
@@ -374,7 +377,7 @@ mark{background:rgba(0,229,255,.2);color:var(--accent);border-radius:2px;padding
 
 <header>
   <div class="header-inner">
-    <div class="header-badge">DFIR Reference v0.1</div>
+    <a href="../index.html" class="header-badge" title="Back to DFIR Scripts home">DFIR Reference v0.1</a>
     <h1>Windows Registry <em>Forensic Artifacts</em></h1>
     <p class="header-sub">RegRipper 3.0/4.0 · Sysinternals Autoruns v14.11 · RECmd · SBECmd · AmcacheParser · Hexacorn BGORK · LOLRMM.io (23 RMM tools) · Notable Attacker Tools · Portable Tools (No Registry) · MITRE ATT&CK v18/v19 (68 techniques mapped)</p>
     <div class="stats-row">
