@@ -245,7 +245,7 @@ function buildSigmaChips(eid){
   if(!rids.length)return'';
   return rids.map(rid=>{
     const r=SIGMA_RULES.find(x=>x.id===rid);if(!r)return'';
-    return`<span class="sigma-chip" onclick="jumpToSigmaRule('${rid}',event)" title="${esc(r.title)}">⚡${rid}</span>`;
+    return`<span class="sigma-chip" onclick="jumpToSigmaRule('${rid}',event)" title="${esc(r.title)}">⚡${esc(r.technique_id)}</span>`;
   }).join('');
 }
 
@@ -405,7 +405,6 @@ function renderSigma(){
         <div class="srd-block"><div class="srd-label">ATT&CK · Sigma</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px">
             <a class="sigma-ext-link" href="https://attack.mitre.org/techniques/${esc(rule.technique_id.replace('.','/').slice(0,6))}/${rule.technique_id.includes('.')?rule.technique_id.split('.')[1]:''}" target="_blank">${esc(rule.technique_id)} ↗</a>
-            ${rule.sigma_url?`<a class="sigma-ext-link" href="${esc(rule.sigma_url)}" target="_blank">Sigma YAML ↗</a>`:''}
           </div>
         </div>
       </div>`;
